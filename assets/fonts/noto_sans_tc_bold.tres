@@ -1,6 +1,6 @@
 [gd_resource type="FontVariation" load_steps=2 format=3]
 
-[ext_resource type="FontFile" path="res://assets/fonts/NotoSansTC-Big5Level1.ttf" id="1_tc"]
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansTC-Big5Level1-runtime.woff2" id="1_tc"]
 
 [resource]
 resource_name = "Noto Sans TC bold (700)"

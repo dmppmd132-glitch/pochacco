@@ -24,8 +24,10 @@ iPhone 請以 Safari 開啟網址，按「分享」→「加入主畫面」，�
 
 ## 專案與部署
 
-遊戲原始碼位於專案根目錄。已建置的 PWA 靜態檔案放在 `site/`；`.github/workflows/pages.yml` 會在 `main` 分支更新時把 `site/` 部署至 GitHub Pages。Godot 預覽匯出曾由專案工作流程完成；若要更新遊戲內容，應重新匯出 Web/PWA、替換 `site/` 並確認子目錄 `/pochacco/` 下的相對資源與 Service Worker 路徑。
+遊戲原始碼位於專案根目錄。GitHub Pages 部署 `github-pages/` 中的自包含 PWA（含 `index.wasm`、`index.pck`、manifest、Service Worker 與離線頁）；`.github/workflows/pages.yml` 會在 `main` 分支更新時發佈此目錄。Webdev 管理的 `site/` 是另一份預覽輸出，不是 GitHub Pages 的部署來源。
+
+更新遊戲後，先執行 `npm run build` 產生 `dist/standalone/`，再執行 `npm run pages:sync` 更新 `github-pages/`，提交並推送到 `main` 後即可觸發 Pages 部署。同步腳本會排除本機 build fingerprint，並確認 PWA 包含 WASM/PCK 且沒有 Manus Storage 絕對路徑。
 
 ## 注意事項
 
-本 repo 與 Pages 網站均為公開。請勿加入密鑰、個人資料或未授權素材。角色及品牌相關素材依專案權利聲明使用；Godot 匯出檔內含第三方元件，授權資訊見 `site/THIRD_PARTY_NOTICES.txt` 與 `site/open-source-licenses.html`。
+本 repo 與 Pages 網站均為公開。請勿加入密鑰、個人資料或未授權素材。角色及品牌相關素材依專案權利聲明使用；Godot 匯出檔內含第三方元件，授權資訊見 `github-pages/THIRD_PARTY_NOTICES.txt` 與 `github-pages/open-source-licenses.html`。

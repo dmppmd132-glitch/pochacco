@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "export": "mkdir -p dist && godot --headless --path . --export-release Web dist/index.html",
+    "pages:sync": "node scripts/sync-github-pages.mjs",
     "verify-export": "node scripts/check-exported-pack.mjs",
     "check": "node scripts/manus/runtime-command.cjs ./verify.mjs",
     "test": "godot --headless --path . -s test/smoke.gd",

@@ -50,13 +50,21 @@
     }
   },
   "assets": {
+    "assets/fonts/NotoSansTC-Big5Level1-runtime.woff2": {
+      "path": "/manus-storage/game/sha256/7d8625a5ea8afc55011940ed62dfb68772cbbd56987f3cc20940f745c4a0ab99.woff2",
+      "sha256": "sha256:7d8625a5ea8afc55011940ed62dfb68772cbbd56987f3cc20940f745c4a0ab99",
+      "size": 963784,
+      "assetType": "font",
+      "groupId": "traditional-chinese-fonts",
+      "used": true
+    },
     "assets/fonts/NotoSansTC-Big5Level1.ttf": {
       "path": "/manus-storage/game/sha256/ff80bd617d8aa539ed14a325aa80a38fd70b827023c18e83ebb693bc7840cbaf.ttf",
       "sha256": "sha256:ff80bd617d8aa539ed14a325aa80a38fd70b827023c18e83ebb693bc7840cbaf",
       "size": 3392520,
       "assetType": "font",
       "groupId": "traditional-chinese-fonts",
-      "used": true
+      "used": false
     },
     "assets/share/favicon-32.png": {
       "path": "/manus-storage/game/sha256/24ceb9af7ead32f9e7b45594bf912a8bc555aa9cf8e83bc26e9cc906cb3a7488.png",
