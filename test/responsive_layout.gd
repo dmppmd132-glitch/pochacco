@@ -85,9 +85,11 @@ func _check_game(physical_size: Vector2i) -> void:
 	root.add_child(game)
 	await _settle()
 	var viewport_size: Vector2 = game.get_viewport_rect().size
-	for node_name in ["NotebookHUD", "Objective", "PauseButton", "TouchLeft", "TouchRight", "TouchJump", "TouchSwitch"]:
+	for node_name in ["NotebookHUD", "Objective", "PauseButton", "TouchJoystick", "TouchJump", "TouchAttack", "TouchSwitch"]:
 		var control := game.find_child(node_name, true, false) as Control
 		_check_rect(control, viewport_size, node_name, physical_size)
+		if node_name == "TouchJoystick" and control != null and (control.size.x < 112.0 or control.size.y < 112.0):
+			failures.append("virtual joystick touch target too small at %s: %s" % [physical_size, control.size])
 	var touch_controls := game.find_child("PwaTouchControls", true, false) as Control
 	if touch_controls == null:
 		failures.append("PWA touch control layer is missing at %s" % physical_size)

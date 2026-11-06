@@ -7,8 +7,8 @@ Applies to: Manus Game Dev Web Runtime
 Godot Engine version: 4.7.2.stable.official.ed1daf0bf
 Notice version / last updated: 1 / 2026-09-24
 Runtime build artifacts:
-index.js: sha256:54eab8af36bc125fa26af6964960ea82455802b1d901369259ccb96b355e212d
-index.wasm: sha256:11ea19645368f8e73cf337b59cfd7ceeb4ebb51f7a3bbf77d1a5c3ddfedbc522
+index.js: sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a
+index.wasm: sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0
 
 These notices cover the platform-provided Godot Web runtime and its bundled libraries.
 The complete upstream Godot copyright inventory is retained, including entries for

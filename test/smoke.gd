@@ -41,7 +41,41 @@ func _run() -> void:
 	_check(game.health == 3 and game.hearts_view.health == 3, "three strawberry mochi hearts start full")
 	_check(game.dudu != null and game.pochacco != null, "both playable companions are spawned")
 	_check(game.active_is_dudu() and game.get_active_buddy() == game.dudu, "Dudu leads at the start")
-	game.switch_character()
+	var joystick: Control = game.find_child("TouchJoystick", true, false)
+	_check(joystick != null and joystick.size.x >= 112.0, "a large virtual joystick is available for phone movement")
+	if joystick != null:
+		var touch_down := InputEventScreenTouch.new()
+		touch_down.index = 3
+		touch_down.pressed = true
+		touch_down.position = joystick.size * 0.5
+		joystick.call("_gui_input", touch_down)
+		var drag_right := InputEventScreenDrag.new()
+		drag_right.index = 3
+		drag_right.position = joystick.size * 0.5 + Vector2(joystick.size.x * 0.24, 0.0)
+		joystick.call("_gui_input", drag_right)
+		_check(game.touch_move_axis > 0.5, "dragging the virtual joystick moves the active buddy right")
+		var touch_up := InputEventScreenTouch.new()
+		touch_up.index = 3
+		touch_up.pressed = false
+		touch_up.position = drag_right.position
+		joystick.call("_gui_input", touch_up)
+		_check(is_zero_approx(game.touch_move_axis), "releasing the virtual joystick stops movement")
+		var jump_down := InputEventScreenTouch.new()
+		jump_down.index = 4
+		jump_down.pressed = true
+		jump_down.position = joystick.size * 0.5
+		joystick.call("_gui_input", jump_down)
+		var drag_up := InputEventScreenDrag.new()
+		drag_up.index = 4
+		drag_up.position = joystick.size * 0.5 + Vector2(0.0, -joystick.size.y * 0.25)
+		joystick.call("_gui_input", drag_up)
+		_check(game.consume_touch_jump(), "an upward joystick flick queues a jump")
+		var jump_release := InputEventScreenTouch.new()
+		jump_release.index = 4
+		jump_release.pressed = false
+		jump_release.position = drag_up.position
+		joystick.call("_gui_input", jump_release)
+		game.switch_character()
 	_check(game.active_is_pochacco() and game.get_active_buddy() == game.pochacco, "instant character switching makes Pochacco controllable")
 	game.switch_character()
 	_check(game.active_is_dudu() and game.get_active_buddy() == game.dudu, "instant switching returns control to Dudu")

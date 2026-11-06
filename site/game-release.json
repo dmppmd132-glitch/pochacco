@@ -3,8 +3,14 @@
   "engineVersion": "4.7.2.stable.official.ed1daf0bf",
   "inputs": {
     "objectFormat": "sha1",
-    "tree": "00d23402aa4196c413ffc58c7cd5e3b230b60ae5",
+    "tree": "5156b5b8589cce5632f3129b64303f8767fe7d45",
     "entries": [
+      {
+        "path": ".github/workflows/pages.yml",
+        "type": "file",
+        "mode": "100644",
+        "object": "995e1d26b0e7980147b6801a5961ea5e8efc180d"
+      },
       {
         "path": ".gitignore",
         "type": "file",
@@ -27,19 +33,19 @@
         "path": "PLAYING.md",
         "type": "file",
         "mode": "100644",
-        "object": "e2185a7ef3ef3d16333807c502b3ea3573a85774"
+        "object": "e0f48f34566e52dc57f87b7eb0cbd565812634d9"
       },
       {
         "path": "README.md",
         "type": "file",
         "mode": "100644",
-        "object": "0b20f95e780179f7fa10099d88650496f0441d20"
+        "object": "4c560110a19bc63b2876c99de17ede6377ad3851"
       },
       {
         "path": "TODO.md",
         "type": "file",
         "mode": "100644",
-        "object": "77817510728a0f57aa6fd0be5fcbed0c1458c087"
+        "object": "8037dc47abe29aaae380cecf7e782332df56f857"
       },
       {
         "path": "assets.lock.json",
@@ -843,7 +849,7 @@
         "path": "localization/zh-TW.json",
         "type": "file",
         "mode": "100644",
-        "object": "8c112513bfd8157f8c8fc78c9eb01becae100a28"
+        "object": "ee06cf5fa3c714212da0386c07ddd3f8b3797edd"
       },
       {
         "path": "package.json",
@@ -1161,7 +1167,7 @@
         "path": "scripts/snackisle_game.gd",
         "type": "file",
         "mode": "100644",
-        "object": "9beaa96701570c46d8b60d584f91683e94da6371"
+        "object": "60cf399c9fd8f05f4611539b100ff333f067e2fe"
       },
       {
         "path": "scripts/snackisle_game.gd.uid",
@@ -1173,7 +1179,7 @@
         "path": "scripts/snackisle_title.gd",
         "type": "file",
         "mode": "100644",
-        "object": "9b5de24cfe2e7af41ff569f51b76bd7fec4ebf78"
+        "object": "5b4310a602a72cb16cd740508472639809085071"
       },
       {
         "path": "scripts/snackisle_title.gd.uid",
@@ -1485,7 +1491,7 @@
         "path": "test/responsive_layout.gd",
         "type": "file",
         "mode": "100644",
-        "object": "45bf1d5f2a1250d401b20c211bb994d0987c994a"
+        "object": "d95da058bd232f286bd982b1ed654595f61f025d"
       },
       {
         "path": "test/responsive_layout.gd.uid",
@@ -1497,7 +1503,7 @@
         "path": "test/smoke.gd",
         "type": "file",
         "mode": "100644",
-        "object": "1915d87700c5f1076e58dd4beaea95983d8132db"
+        "object": "cfc70dc4bcb809e408168a2399b3c6a16c2f881e"
       },
       {
         "path": "test/smoke.gd.uid",
@@ -1760,7 +1766,7 @@
     ]
   },
   "build": {
-    "snapshotId": "sha256:70bf0e998105068d97b276067c727c3cce84fe122dec45a2efa654ae9470722f",
+    "snapshotId": "sha256:20ae9327956424edd2602ce727b1959e56a8cbc004343ed23b19b63a69c09740",
     "toolchain": {
       "engineVersion": "4.7.2.stable.official.ed1daf0bf",
       "engineDigest": "sha256:8d106cbe6144c2dc7e881d61d2429c1a8a76e6b22ef48bd5e48dcf934953f71e",
@@ -1773,7 +1779,7 @@
     "profile": "release",
     "export": {
       "profile": "release",
-      "snapshotId": "sha256:70bf0e998105068d97b276067c727c3cce84fe122dec45a2efa654ae9470722f",
+      "snapshotId": "sha256:20ae9327956424edd2602ce727b1959e56a8cbc004343ed23b19b63a69c09740",
       "files": {
         "THIRD_PARTY_NOTICES.txt": "sha256:4599532d14d112782ed21c07044b9f31e7912273c61600726af23c600f910400",
         "index.144x144.png": "sha256:36509df2a4f445c6d46a271f025790804e49597fbdb1dd833bc97d247c14e1e0",
@@ -1782,18 +1788,18 @@
         "index.apple-touch-icon.png": "sha256:625c76387cda1e5786654b28568fc210398bd87f7cc0fab8c1fbee5071d6afd4",
         "index.audio.position.worklet.js": "sha256:be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8",
         "index.audio.worklet.js": "sha256:5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-        "index.html": "sha256:d6fd3adbdf23677b3c8a54d5606fe27e70433a0e68619ae72483332124f0144b",
+        "index.html": "sha256:364d861e4f6921262c392180cda1ba19e0fca8236f6a2355f9287f0f123349ab",
         "index.icon.png": "sha256:6c768c31f6a425e7b7e7e44ce055e2dc1b58687f02ab6a9af2d656875df60a84",
         "index.js": "sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a",
         "index.manifest.json": "sha256:0207dec117447191a138993c532e163d78d065f14b5efbd92edd1ea530a200e5",
         "index.offline.html": "sha256:03ac9edcb64f90669e823b50f98ec78268dc6801c8d587f499c5acc787ebbe33",
-        "index.pck": "sha256:ee7cd03a83756e16a79f20d00416e79fa45340431dc902a051dc83bd88daf482",
+        "index.pck": "sha256:ca7ac9aa5e233cd8782b33412b71102b20960c92446308d7ff4f7fd26c22ab04",
         "index.png": "sha256:c8f02392ee13709b5ad038608e2f50d5e7dbacc6e4466b67dbfc5021e8dc8c91",
-        "index.service.worker.js": "sha256:83e8a275dd658df58922ba048e5644b6de23de4a723f127f4462c4e662fa96e4",
+        "index.service.worker.js": "sha256:3e7f382c0d71bca37b88d8df7edb5147ba9ab0378f318c9b535f114fe7c3be3e",
         "index.wasm": "sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
         "open-source-licenses.html": "sha256:1fb7909a3d211d20fd02bd59d95a0f56c070c42e94be79b5efc0c2b1832d1a41"
       },
-      "digest": "sha256:3365aea697a5c94269cd1fee74009810ab55650213f6b61b8937f79ea325c080"
+      "digest": "sha256:546749f7d7bc8cafba4dcd767f62c1fa555d5d3717b0a7b25c6c02dc0fbe44ce"
     }
   },
   "artifacts": {
@@ -1802,8 +1808,8 @@
       "sha256": "sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"
     },
     "pck": {
-      "path": "/manus-storage/game/sha256/ee7cd03a83756e16a79f20d00416e79fa45340431dc902a051dc83bd88daf482.pck",
-      "sha256": "sha256:ee7cd03a83756e16a79f20d00416e79fa45340431dc902a051dc83bd88daf482"
+      "path": "/manus-storage/game/sha256/ca7ac9aa5e233cd8782b33412b71102b20960c92446308d7ff4f7fd26c22ab04.pck",
+      "sha256": "sha256:ca7ac9aa5e233cd8782b33412b71102b20960c92446308d7ff4f7fd26c22ab04"
     }
   },
   "files": {
@@ -1815,13 +1821,13 @@
     "index.apple-touch-icon.png": "sha256:625c76387cda1e5786654b28568fc210398bd87f7cc0fab8c1fbee5071d6afd4",
     "index.audio.position.worklet.js": "sha256:be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8",
     "index.audio.worklet.js": "sha256:5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-    "index.html": "sha256:04236f37d70ecf4d5cf2a493d9c87cff853ab3b38bb0f72930cbced1d340d434",
+    "index.html": "sha256:b061eaed2d28c42a5ff7e0978462d8eaa070b33915bb949972c1ba31ef49b77f",
     "index.icon.png": "sha256:6c768c31f6a425e7b7e7e44ce055e2dc1b58687f02ab6a9af2d656875df60a84",
     "index.js": "sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a",
     "index.manifest.json": "sha256:0207dec117447191a138993c532e163d78d065f14b5efbd92edd1ea530a200e5",
     "index.offline.html": "sha256:03ac9edcb64f90669e823b50f98ec78268dc6801c8d587f499c5acc787ebbe33",
     "index.png": "sha256:c8f02392ee13709b5ad038608e2f50d5e7dbacc6e4466b67dbfc5021e8dc8c91",
-    "index.service.worker.js": "sha256:83e8a275dd658df58922ba048e5644b6de23de4a723f127f4462c4e662fa96e4",
+    "index.service.worker.js": "sha256:3e7f382c0d71bca37b88d8df7edb5147ba9ab0378f318c9b535f114fe7c3be3e",
     "open-source-licenses.html": "sha256:1fb7909a3d211d20fd02bd59d95a0f56c070c42e94be79b5efc0c2b1832d1a41",
     "share/1eb05ddfc86fec9dc1e80dd383c61982e0fd87a82024ae399ff12c5ed7727223.png": "sha256:1eb05ddfc86fec9dc1e80dd383c61982e0fd87a82024ae399ff12c5ed7727223",
     "share/beb425a329a80c73e847c992aeaa7a9683f6bf5c6bfd14cd6f6be04b66e156a9.png": "sha256:beb425a329a80c73e847c992aeaa7a9683f6bf5c6bfd14cd6f6be04b66e156a9"

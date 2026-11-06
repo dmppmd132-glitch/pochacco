@@ -49,7 +49,10 @@ var run_over := false
 var pause_overlay: CanvasLayer
 var result_overlay: CanvasLayer
 var touch_controls: Control
+var touch_joystick: SnackIsleTouchStick
 var touch_buttons: Dictionary = {}
+var touch_move_axis := 0.0
+var touch_jump_pending := false
 var last_ui_refresh := 0.0
 
 
@@ -261,6 +264,84 @@ class MochiHearts extends Control:
 				draw_circle(center + Vector2(6, -10), 2.2, Color("#ef8da2"))
 
 
+class SnackIsleTouchStick extends Control:
+	signal axis_changed(value: float)
+	signal jump_requested
+
+	var pointer_id := -1
+	var axis := Vector2.ZERO
+	var knob_offset := Vector2.ZERO
+	var jump_latched := false
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		focus_mode = Control.FOCUS_NONE
+		custom_minimum_size = Vector2(132, 132)
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventScreenTouch:
+			if event.pressed and pointer_id == -1:
+				_begin_pointer(event.index, event.position)
+			elif not event.pressed and event.index == pointer_id:
+				_release_pointer()
+		elif event is InputEventScreenDrag and event.index == pointer_id:
+			_update_pointer(event.position)
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed and pointer_id == -1:
+				_begin_pointer(-2, event.position)
+			elif not event.pressed and pointer_id == -2:
+				_release_pointer()
+		elif event is InputEventMouseMotion and pointer_id == -2:
+			_update_pointer(event.position)
+
+	func _begin_pointer(pointer: int, point: Vector2) -> void:
+		if not Rect2(Vector2.ZERO, size).has_point(point):
+			return
+		pointer_id = pointer
+		_update_pointer(point)
+		accept_event()
+
+	func _update_pointer(point: Vector2) -> void:
+		var radius := minf(size.x, size.y) * 0.34
+		var displacement := point - size * 0.5
+		var normalized := displacement / maxf(radius, 1.0)
+		if normalized.length() > 1.0:
+			normalized = normalized.normalized()
+		axis = normalized
+		knob_offset = axis * radius
+		if axis.y < -0.66 and not jump_latched:
+			jump_latched = true
+			jump_requested.emit()
+		elif axis.y > -0.35:
+			jump_latched = false
+		axis_changed.emit(axis.x)
+		queue_redraw()
+		accept_event()
+
+	func _release_pointer() -> void:
+		pointer_id = -1
+		axis = Vector2.ZERO
+		knob_offset = Vector2.ZERO
+		jump_latched = false
+		axis_changed.emit(0.0)
+		queue_redraw()
+		accept_event()
+
+	func reset() -> void:
+		if pointer_id != -1 or axis != Vector2.ZERO:
+			_release_pointer()
+
+	func _draw() -> void:
+		var center := size * 0.5
+		var radius := minf(size.x, size.y) * 0.43
+		draw_circle(center, radius, Color(0.48, 0.29, 0.31, 0.22))
+		draw_arc(center, radius, 0.0, TAU, 48, Color("#fff4e7", 0.9), 3.0, true)
+		draw_line(center, center + knob_offset, Color("#fff4e7", 0.72), 4.0, true)
+		draw_circle(center + knob_offset, radius * 0.43, Color("#f5d7c5", 0.94))
+		draw_circle(center + knob_offset, radius * 0.43, Color("#a95e70", 0.88), false, 3.0, true)
+		draw_circle(center + knob_offset + Vector2(-radius * 0.11, -radius * 0.11), radius * 0.08, Color("#fffaf1", 0.9))
+
+
 class Buddy extends CharacterBody2D:
 	var game
 	var is_dudu := true
@@ -305,7 +386,7 @@ class Buddy extends CharacterBody2D:
 		roll_time = maxf(0.0, roll_time - delta)
 		landing_lock = maxf(0.0, landing_lock - delta)
 		bounce_guard = maxf(0.0, bounce_guard - delta)
-		var direction := Input.get_axis("move_left", "move_right") if controlled else _follow_axis()
+		var direction := clampf(Input.get_axis("move_left", "move_right") + game.touch_move_axis, -1.0, 1.0) if controlled else _follow_axis()
 		moving_axis = direction
 		if absf(direction) > 0.05:
 			facing = signf(direction)
@@ -314,7 +395,8 @@ class Buddy extends CharacterBody2D:
 			velocity.y = maxf(velocity.y, 0.0)
 		else:
 			velocity.y += game.GRAVITY * delta
-		if controlled and Input.is_action_just_pressed("jump") and on_floor_before and landing_lock <= 0.0:
+		var touch_jump: bool = game.consume_touch_jump() if controlled else false
+		if controlled and (Input.is_action_just_pressed("jump") or touch_jump) and on_floor_before and landing_lock <= 0.0:
 			velocity.y = -game.JUMP_SPEED
 			game.on_jump(self)
 		if controlled and is_dudu and Input.is_action_just_pressed("ground_pound"):
@@ -771,23 +853,12 @@ func _build_touch_controls() -> void:
 	touch_controls.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	touch_controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_root.add_child(touch_controls)
-	var directions := HBoxContainer.new()
-	directions.name = "Directions"
-	directions.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	directions.offset_left = 12
-	directions.offset_top = -74
-	directions.offset_right = 144
-	directions.offset_bottom = -12
-	directions.add_theme_constant_override("separation", 8)
-	touch_controls.add_child(directions)
-	var left_button := _make_button("◀", 58, 58, false)
-	left_button.name = "TouchLeft"
-	_hold_action(left_button, "move_left")
-	directions.add_child(left_button)
-	var right_button := _make_button("▶", 58, 58, false)
-	right_button.name = "TouchRight"
-	_hold_action(right_button, "move_right")
-	directions.add_child(right_button)
+	touch_joystick = SnackIsleTouchStick.new()
+	touch_joystick.name = "TouchJoystick"
+	touch_joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	touch_joystick.axis_changed.connect(_set_touch_move_axis)
+	touch_joystick.jump_requested.connect(_request_touch_jump)
+	touch_controls.add_child(touch_joystick)
 	var grid := GridContainer.new()
 	grid.name = "ActionGrid"
 	grid.columns = 3
@@ -835,6 +906,31 @@ func _hold_action(button: Button, action: String) -> void:
 	button.mouse_exited.connect(func(): Input.action_release(action))
 
 
+func _set_touch_move_axis(value: float) -> void:
+	if run_over or is_instance_valid(pause_overlay):
+		touch_move_axis = 0.0
+	else:
+		touch_move_axis = clampf(value, -1.0, 1.0)
+
+
+func _request_touch_jump() -> void:
+	if not run_over and not is_instance_valid(pause_overlay):
+		touch_jump_pending = true
+
+
+func consume_touch_jump() -> bool:
+	var requested := touch_jump_pending
+	touch_jump_pending = false
+	return requested
+
+
+func _clear_touch_input() -> void:
+	touch_move_axis = 0.0
+	touch_jump_pending = false
+	if is_instance_valid(touch_joystick):
+		touch_joystick.reset()
+
+
 func _layout_hud() -> void:
 	if hud_root == null:
 		return
@@ -850,11 +946,11 @@ func _layout_hud() -> void:
 		var touch := DisplayServer.is_touchscreen_available() or view_size.x < 900.0
 		touch_controls.visible = touch
 		var button_size := 42.0 if view_size.x < 400.0 else (54.0 if view_size.x < 850.0 else 68.0)
-		var directions := touch_controls.get_node("Directions") as HBoxContainer
-		directions.offset_top = -button_size - 14.0
-		directions.offset_right = button_size * 2.0 + 18.0
-		for child in directions.get_children():
-			(child as Button).custom_minimum_size = Vector2(button_size, button_size)
+		var stick_size := clampf(button_size * 2.45, 112.0, 156.0)
+		touch_joystick.offset_left = 12.0
+		touch_joystick.offset_top = -stick_size - 12.0
+		touch_joystick.offset_right = 12.0 + stick_size
+		touch_joystick.offset_bottom = -12.0
 		var grid := touch_controls.get_node("ActionGrid") as GridContainer
 		var cell := button_size if button_size <= 54.0 else 60.0
 		var grid_width := cell * 3.0 + 8.0
@@ -1425,6 +1521,7 @@ func _touch_action(action_name: String) -> void:
 func open_pause() -> void:
 	if run_over or is_instance_valid(pause_overlay):
 		return
+	_clear_touch_input()
 	get_tree().paused = true
 	pause_overlay = _create_overlay("先休息一下", "草莓蛋糕村的旅程會在這裡等你。", [["繼續遊玩", resume_game], ["重新開始", restart_game], ["回到首頁", return_to_title]], false)
 
@@ -1450,6 +1547,7 @@ func finish_level() -> void:
 	if run_over:
 		return
 	run_over = true
+	_clear_touch_input()
 	var result_text := _l10n("草莓噴泉回復平靜，怪盜喵嗚的果醬大計泡湯啦。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了草莓蛋糕村野餐！", {"count": "%02d" % star_candies})
 	result_overlay = _create_overlay("閥門找回來了！", result_text, [["再玩一次", restart_game], ["回到首頁", return_to_title]], true)
 
