@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff4ee">
+  <title>暫時離線｜點心島的奇幻野餐</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; background: #fff4ee; color: #684b55; }
+    * { box-sizing: border-box; }
+    body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 24px; }
+    main { width: min(100%, 520px); padding: 32px; border: 3px solid #e7a4ae; border-radius: 28px; background: #fffaf0; text-align: center; box-shadow: 0 12px 32px #794c5d20; }
+    .badge { display: inline-grid; place-items: center; width: 88px; height: 88px; border-radius: 24px; background: #ffe29c; color: #cf5e75; font-size: 44px; }
+    h1 { margin: 20px 0 10px; color: #bd4f70; font-size: clamp(24px, 7vw, 38px); }
+    p { line-height: 1.7; }
+    button { min-height: 48px; margin-top: 8px; padding: 10px 24px; border: 0; border-radius: 18px; background: #d96b86; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #edc65c; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="badge" aria-hidden="true">★</div>
+    <h1>點心島正在休息</h1>
+    <p>目前沒有網路連線。請先連線完成遊戲首次載入；之後，已快取的遊戲可以離線啟動與遊玩。</p>
+    <button type="button" onclick="location.reload()">重新嘗試</button>
+  </main>
+</body>
+</html>

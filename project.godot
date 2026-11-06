@@ -11,15 +11,16 @@ config_version=5
 [application]
 
 boot_splash/image="res://assets/template/ui/loading-background.png"
-boot_splash/show_image=true
+boot_splash/show_image=false
 boot_splash/fullsize=true
 boot_splash/use_filter=true
-boot_splash/bg_color=Color(0.14118, 0.11765, 0.15686, 1)
+boot_splash/bg_color=Color(1, 0.956, 0.933, 1)
+config/icon="res://assets/share/pwa-icon-512-optimized.png"
 
 
 
 
-config/name="Yarn Platformer"
+config/name="嘟嘟與帕恰狗：點心島的奇幻野餐"
 run/main_scene="res://scenes/title_screen.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
@@ -43,6 +44,7 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [gui]
 
@@ -118,3 +120,6 @@ skip_tutorial={
 textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[editor]
+import/use_multiple_threads=false

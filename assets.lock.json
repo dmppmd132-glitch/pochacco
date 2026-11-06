@@ -1,13 +1,151 @@
 {
   "version": 2,
   "groups": {
+    "app-branding": {
+      "name": "遊戲品牌與分享圖",
+      "order": 10
+    },
+    "player-characters": {
+      "name": "雙主角角色",
+      "order": 20
+    },
     "template": {
       "name": "Template",
       "order": 0
+    },
+    "traditional-chinese-fonts": {
+      "name": "繁體中文介面字型",
+      "order": 30
     }
   },
-  "bundles": {},
+  "bundles": {
+    "template-cat-run-frame": {
+      "name": "Run",
+      "assetType": "animation",
+      "groupId": "template",
+      "frames": [
+        "assets/template/cat/run/frame_00.webp",
+        "assets/template/cat/run/frame_01.webp",
+        "assets/template/cat/run/frame_02.webp",
+        "assets/template/cat/run/frame_03.webp",
+        "assets/template/cat/run/frame_04.webp",
+        "assets/template/cat/run/frame_05.webp",
+        "assets/template/cat/run/frame_06.webp",
+        "assets/template/cat/run/frame_07.webp",
+        "assets/template/cat/run/frame_08.webp",
+        "assets/template/cat/run/frame_09.webp",
+        "assets/template/cat/run/frame_10.webp",
+        "assets/template/cat/run/frame_11.webp",
+        "assets/template/cat/run/frame_12.webp",
+        "assets/template/cat/run/frame_13.webp",
+        "assets/template/cat/run/frame_14.webp",
+        "assets/template/cat/run/frame_15.webp",
+        "assets/template/cat/run/frame_16.webp",
+        "assets/template/cat/run/frame_17.webp"
+      ],
+      "fps": 12,
+      "loop": true,
+      "coverFrame": "assets/template/cat/run/frame_00.webp",
+      "descriptor": "assets/template/cat/run/frame.animation.json"
+    }
+  },
   "assets": {
+    "assets/fonts/NotoSansTC-Big5Level1.ttf": {
+      "path": "/manus-storage/game/sha256/ff80bd617d8aa539ed14a325aa80a38fd70b827023c18e83ebb693bc7840cbaf.ttf",
+      "sha256": "sha256:ff80bd617d8aa539ed14a325aa80a38fd70b827023c18e83ebb693bc7840cbaf",
+      "size": 3392520,
+      "assetType": "font",
+      "groupId": "traditional-chinese-fonts",
+      "used": true
+    },
+    "assets/share/favicon-32.png": {
+      "path": "/manus-storage/game/sha256/24ceb9af7ead32f9e7b45594bf912a8bc555aa9cf8e83bc26e9cc906cb3a7488.png",
+      "sha256": "sha256:24ceb9af7ead32f9e7b45594bf912a8bc555aa9cf8e83bc26e9cc906cb3a7488",
+      "size": 2715,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": false
+    },
+    "assets/share/loader-icon-96.png": {
+      "path": "/manus-storage/game/sha256/d884edc5f6b771fe6fb89af3876e2dcb518c52094de87cf2b420002912fa6efc.png",
+      "sha256": "sha256:d884edc5f6b771fe6fb89af3876e2dcb518c52094de87cf2b420002912fa6efc",
+      "size": 19392,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": false
+    },
+    "assets/share/og-cover.png": {
+      "path": "/manus-storage/game/sha256/beb425a329a80c73e847c992aeaa7a9683f6bf5c6bfd14cd6f6be04b66e156a9.png",
+      "sha256": "sha256:beb425a329a80c73e847c992aeaa7a9683f6bf5c6bfd14cd6f6be04b66e156a9",
+      "size": 5761704,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": true
+    },
+    "assets/share/pwa-icon-144.png": {
+      "path": "/manus-storage/game/sha256/e5dea2d7b9aac10fae715de21f01fc0116c8ce60edbd34033acb2d737bc69387.png",
+      "sha256": "sha256:e5dea2d7b9aac10fae715de21f01fc0116c8ce60edbd34033acb2d737bc69387",
+      "size": 41636,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": true
+    },
+    "assets/share/pwa-icon-180.png": {
+      "path": "/manus-storage/game/sha256/892a48c110af01c3d94fadbe61b3c7bb69b28af8e43875082a9b43e41c308b2f.png",
+      "sha256": "sha256:892a48c110af01c3d94fadbe61b3c7bb69b28af8e43875082a9b43e41c308b2f",
+      "size": 63617,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": true
+    },
+    "assets/share/pwa-icon-512-optimized.png": {
+      "path": "/manus-storage/game/sha256/1eb05ddfc86fec9dc1e80dd383c61982e0fd87a82024ae399ff12c5ed7727223.png",
+      "sha256": "sha256:1eb05ddfc86fec9dc1e80dd383c61982e0fd87a82024ae399ff12c5ed7727223",
+      "size": 485999,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": true
+    },
+    "assets/share/pwa-icon-512.png": {
+      "path": "/manus-storage/game/sha256/91944bb6a1f792ee528aeb53b52c71b44e68533b0cf617163dc0992c60532d8e.png",
+      "sha256": "sha256:91944bb6a1f792ee528aeb53b52c71b44e68533b0cf617163dc0992c60532d8e",
+      "size": 5516636,
+      "assetType": "image",
+      "groupId": "app-branding",
+      "used": false
+    },
+    "assets/snackisle/dudu-512.png": {
+      "path": "/manus-storage/game/sha256/7ce3ab824309ad255bf5b9a4d9badc47cea3979c03a7ed5fe1bb32dd9e15eb56.png",
+      "sha256": "sha256:7ce3ab824309ad255bf5b9a4d9badc47cea3979c03a7ed5fe1bb32dd9e15eb56",
+      "size": 302534,
+      "assetType": "image",
+      "groupId": "player-characters",
+      "used": true
+    },
+    "assets/snackisle/dudu.png": {
+      "path": "/manus-storage/game/sha256/2d4dfa33e5b3617ca87cf0cc89ca51ea6a070dbdefdbb92225ecbf9cca32a5d5.png",
+      "sha256": "sha256:2d4dfa33e5b3617ca87cf0cc89ca51ea6a070dbdefdbb92225ecbf9cca32a5d5",
+      "size": 5034036,
+      "assetType": "image",
+      "groupId": "player-characters",
+      "used": false
+    },
+    "assets/snackisle/pochacco-512.png": {
+      "path": "/manus-storage/game/sha256/a3b8c13b49b850550f98a67ef9cc459f7fa69db2dad25de2de3704577da8150a.png",
+      "sha256": "sha256:a3b8c13b49b850550f98a67ef9cc459f7fa69db2dad25de2de3704577da8150a",
+      "size": 265958,
+      "assetType": "image",
+      "groupId": "player-characters",
+      "used": true
+    },
+    "assets/snackisle/pochacco.png": {
+      "path": "/manus-storage/game/sha256/dce73d5963de76aab345565f8089f2641dbe77ec6ca1ec893c873bf805284107.png",
+      "sha256": "sha256:dce73d5963de76aab345565f8089f2641dbe77ec6ca1ec893c873bf805284107",
+      "size": 4567958,
+      "assetType": "image",
+      "groupId": "player-characters",
+      "used": false
+    },
     "assets/template/audio/bgm.ogg": {
       "path": "https://d1oupeiobkpcny.cloudfront.net/assets/dashboard/materials/2026/09/04/game-template/game-platformer/2026.09.04-felt-cat-50bf2384/734f709706ddfb9870a4acbc937d786e0a5a43eaadbd4b6aa5e4e18b124c61db/assets/template/audio/bgm.ogg",
       "sha256": "sha256:734f709706ddfb9870a4acbc937d786e0a5a43eaadbd4b6aa5e4e18b124c61db",

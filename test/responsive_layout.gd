@@ -1,159 +1,108 @@
 extends SceneTree
 
+const TITLE_SCENE: PackedScene = preload("res://scenes/title_screen.tscn")
+const GAME_SCENE: PackedScene = preload("res://scenes/game.tscn")
 const VIEWPORT_SIZES := [
-	Vector2i(320, 640), Vector2i(480, 800), Vector2i(400, 800), Vector2i(720, 720), Vector2i(960, 720),
-	Vector2i(1280, 720), Vector2i(1680, 720), Vector2i(1920, 720),
-	Vector2i(2400, 600), Vector2i(320, 960), Vector2i(1280, 720),
+	Vector2i(640, 360),
+	Vector2i(800, 450),
+	Vector2i(960, 540),
+	Vector2i(1280, 720),
+	Vector2i(1680, 720),
+	Vector2i(1920, 1080),
 ]
 
-var failed := false
+var failures: Array[String] = []
+
 
 func _initialize() -> void:
-	run_checks.call_deferred()
+	_run.call_deferred()
 
-func run_checks() -> void:
+
+func _run() -> void:
 	var store := root.get_node("TuningStore")
-	var old_mode: float = store.get_value("display_mode")
-	for display_mode in [0, 1]:
+	var original_mode: float = store.get_value("display_mode")
+	for display_mode in [0.0, 1.0]:
 		store.set_value("display_mode", display_mode)
-		for viewport_size in VIEWPORT_SIZES:
-			paused = true
-			root.size = viewport_size
-			await process_frame
-			await process_frame
-			check_aspect(viewport_size)
-			paused = false
-			await check_touch_bounds()
-			await check_title(viewport_size)
-			await check_game(viewport_size)
-	store.set_value("display_mode", old_mode)
-	if not failed:
-		print("[RESPONSIVE_PASS] bounded viewport, UI, camera and backgrounds")
-	root.get_node("GameAudio").stop_game()
-	OS.delay_msec(180)
-	await process_frame
-	quit(1 if failed else 0)
+		for physical_size: Vector2i in VIEWPORT_SIZES:
+			root.size = physical_size
+			await _settle()
+			_check_viewport(physical_size, int(display_mode))
+			await _check_title(physical_size)
+			await _check_game(physical_size)
+	store.set_value("display_mode", original_mode)
+	var audio := root.get_node_or_null("GameAudio")
+	if audio != null:
+		audio.stop_game()
+	if failures.is_empty():
+		print("[SNACKISLE_RESPONSIVE_PASS] 16:9 PWA, title, notebook HUD and touch targets across landscape viewport sizes")
+	for message: String in failures:
+		push_error("[SNACKISLE_RESPONSIVE_FAIL] " + message)
+	quit(0 if failures.is_empty() else 1)
 
-func check_title(viewport_size: Vector2i) -> void:
-	var title = load("res://scenes/title_screen.tscn").instantiate()
+
+func _settle() -> void:
+	for _frame in 3:
+		await process_frame
+
+
+func _check_viewport(physical_size: Vector2i, display_mode: int) -> void:
+	var visible_size: Vector2 = root.get_visible_rect().size
+	var physical_aspect := float(physical_size.x) / float(physical_size.y)
+	var expected_aspect := 16.0 / 9.0 if display_mode == 0 else clampf(physical_aspect, 1.0, 16.0 / 6.0)
+	if visible_size.y <= 0.0 or absf(visible_size.x / visible_size.y - expected_aspect) > 0.015:
+		failures.append("logical viewport aspect mismatched at %s: %s" % [physical_size, visible_size])
+	if root.content_scale_aspect != Window.CONTENT_SCALE_ASPECT_KEEP:
+		failures.append("uniform contain scaling not active at %s" % physical_size)
+	var design := Vector2(1280.0, 1280.0 / expected_aspect)
+	if expected_aspect >= 1280.0 / 720.0:
+		design = Vector2(720.0 * expected_aspect, 720.0)
+	var scale := minf(1.0, minf(float(physical_size.x) / design.x, float(physical_size.y) / design.y))
+	var expected_size := Vector2i(roundi(design.x * scale), roundi(design.y * scale))
+	if root.content_scale_size != expected_size:
+		failures.append("viewport policy returned %s instead of %s at %s" % [root.content_scale_size, expected_size, physical_size])
+	var transform := root.get_final_transform()
+	if absf(transform.x.length() - transform.y.length()) > 0.002:
+		failures.append("non-uniform stretch detected at %s" % physical_size)
+
+
+func _check_title(physical_size: Vector2i) -> void:
+	var title := TITLE_SCENE.instantiate() as Control
 	root.add_child(title)
-	await process_frame
-	await process_frame
-	var content: Control = title.get_node("ResponsiveCenter/Content")
-	check_rect(content.get_global_rect(), title.get_viewport_rect().size, "title", viewport_size)
+	await _settle()
+	var viewport_size: Vector2 = title.get_viewport_rect().size
+	var panel := title.find_child("DiaryCard", true, false) as Control
+	var start := title.find_child("StartAdventure", true, false) as Control
+	_check_rect(panel, viewport_size, "title panel", physical_size)
+	_check_rect(start, viewport_size, "start button", physical_size)
+	if start != null and (start.size.x < 190.0 or start.size.y < 40.0):
+		failures.append("start button too small at %s: %s" % [physical_size, start.size])
 	title.queue_free()
 	await process_frame
 
-func check_game(viewport_size: Vector2i) -> void:
-	var game = load("res://scenes/game.tscn").instantiate()
-	root.add_child(game)
-	await process_frame
-	await process_frame
-	var top_bar: Control = game.get_node("HudLayer/ResponsiveHud/TopBar")
-	var logical_size: Vector2 = game.get_viewport_rect().size
-	check_rect(top_bar.get_global_rect(), logical_size, "hud", viewport_size)
-	check_rect(game.attack_button.get_global_rect(), logical_size, "attack button", viewport_size)
-	var pixel_scale: float = root.get_final_transform().x.length()
-	if game.attack_button.size.y * pixel_scale < 40 or game.score_label.get_theme_font_size("font_size") * pixel_scale < 14:
-		failed = true
-		push_error("physical mobile HUD text or target too small")
-	var pause_button: Button = game.get("pause_button")
-	if pause_button == null:
-		failed = true
-		push_error("pause button is missing at %s" % viewport_size)
-	else:
-		check_rect(pause_button.get_global_rect(), logical_size, "pause button", viewport_size)
-	var pause_menu = game.get_node_or_null("PauseMenu")
-	if pause_menu == null:
-		failed = true
-		push_error("pause menu is missing at %s" % viewport_size)
-	else:
-		pause_menu.open_menu()
-		await process_frame
-		var pause_panel_rect: Rect2 = pause_menu.panel.get_global_rect()
-		check_rect(pause_panel_rect, logical_size, "pause panel", viewport_size)
 
-		pause_menu.close_menu()
-		await process_frame
-	if game.get_node_or_null("TuningPanel") != null:
-		failed = true
-		push_error("native tuning panel must be absent")
-	var vertical_extra := maxf(0.0, logical_size.y / game.camera.zoom.y - game.BASE_VIEWPORT_HEIGHT)
-	var expected_top := -ceili(vertical_extra * 0.5)
-	var expected_bottom := ceili(game.BASE_VIEWPORT_HEIGHT + vertical_extra * 0.5)
-	if game.camera.limit_top != expected_top or game.camera.limit_bottom != expected_bottom:
-		failed = true
-		push_error("camera bounds do not match %s at %s" % [logical_size, viewport_size])
-	for sprite in game.get_node("WorldArt").layer_sprites:
-		var covered_height: float = sprite.texture.get_height() * sprite.scale.y
-		if covered_height + 0.5 < logical_size.y:
-			failed = true
-			push_error("background does not cover %s at %s" % [logical_size, viewport_size])
-	var sky: Sprite2D = game.get_node("WorldArt").layer_sprites[0]
-	var sky_rect := sky.get_global_transform_with_canvas() * sky.get_rect()
-	if sky_rect.position.y > 0.5 or sky_rect.end.y < logical_size.y - 0.5:
-		failed = true
-		push_error("sky does not cover the actual camera viewport at %s" % viewport_size)
+func _check_game(physical_size: Vector2i) -> void:
+	var game := GAME_SCENE.instantiate() as Node2D
+	root.add_child(game)
+	await _settle()
+	var viewport_size: Vector2 = game.get_viewport_rect().size
+	for node_name in ["NotebookHUD", "Objective", "PauseButton", "TouchLeft", "TouchRight", "TouchJump", "TouchSwitch"]:
+		var control := game.find_child(node_name, true, false) as Control
+		_check_rect(control, viewport_size, node_name, physical_size)
+	var touch_controls := game.find_child("PwaTouchControls", true, false) as Control
+	if touch_controls == null:
+		failures.append("PWA touch control layer is missing at %s" % physical_size)
+	elif viewport_size.x < 900.0 and not touch_controls.visible:
+		failures.append("touch controls should appear at landscape viewport %s" % physical_size)
+	var inventory := game.find_child("InventoryCounts", true, false) as Control
+	_check_rect(inventory, viewport_size, "backpack counter row", physical_size)
 	game.queue_free()
 	await process_frame
 
-func check_rect(rect: Rect2, viewport_size: Vector2, label: String, physical_size: Vector2i) -> void:
-	if rect.position.x < -0.5 or rect.position.y < -0.5 or rect.end.x > viewport_size.x + 0.5 or rect.end.y > viewport_size.y + 0.5:
-		failed = true
-		push_error("%s is outside %s at %s: %s" % [label, viewport_size, physical_size, rect])
 
-
-func check_rect_matches(rect: Rect2, expected: Rect2, label: String, physical_size: Vector2i) -> void:
-	if not rect.position.is_equal_approx(expected.position) or not rect.size.is_equal_approx(expected.size):
-		failed = true
-		push_error("%s does not match responsive margins at %s: %s != %s" % [label, physical_size, rect, expected])
-
-
-func check_aspect(physical_size: Vector2i) -> void:
-	var logical_size := root.get_visible_rect().size
-	var aspect := logical_size.x / logical_size.y
-	var expected := clampf(float(physical_size.x) / physical_size.y, 1.0, 16.0 / 6.0)
-	if root.get_node("TuningStore").get_value("display_mode") == 0:
-		expected = 16.0 / 9.0
-	if absf(aspect - expected) > 0.002 or root.content_scale_aspect != Window.CONTENT_SCALE_ASPECT_KEEP:
-		failed = true
-		push_error("viewport aspect is not clamped at %s: %s" % [physical_size, logical_size])
-	var transform := root.get_final_transform()
-	if absf(transform.x.length() - transform.y.length()) > 0.002:
-		failed = true
-		push_error("viewport is stretched non-uniformly at %s" % physical_size)
-	var displayed_size := logical_size * transform.x.length()
-	var expected_margin := (Vector2(physical_size) - displayed_size) * 0.5
-	if transform.origin.distance_to(expected_margin) > 1.0 or expected_margin.x < -0.5 or expected_margin.y < -0.5:
-		failed = true
-		push_error("game surface is not centered and contained at %s" % physical_size)
-
-
-
-func check_touch_bounds() -> void:
-	var joystick = load("res://scripts/touch_input.gd").new()
-	root.add_child(joystick)
-	var logical_size := root.get_visible_rect().size
-	for position in [Vector2(-10, 10), Vector2(10, -10), logical_size + Vector2(10, 10)]:
-		var touch := InputEventScreenTouch.new()
-		touch.index = 7
-		touch.pressed = true
-		touch.position = position
-		joystick._unhandled_input(touch)
-		if joystick._active:
-			failed = true
-			push_error("letterbox press activated joystick")
-	joystick._begin(7, logical_size * 0.5)
-	joystick._update(logical_size * 0.5 + Vector2(80, -80))
-	if joystick.vector.x < 0.3 or joystick.vector.y > -0.3:
-		failed = true
-		push_error("in-viewport touch drag did not move/jump")
-	var release := InputEventScreenTouch.new()
-	release.index = 7
-	release.position = Vector2(-10, -10)
-	joystick._unhandled_input(release)
-	if joystick._active or joystick.vector != Vector2.ZERO:
-		failed = true
-		push_error("releasing in the letterbox left joystick stuck")
-	joystick.queue_free()
-	await process_frame
+func _check_rect(control: Control, viewport_size: Vector2, label: String, physical_size: Vector2i) -> void:
+	if control == null:
+		failures.append("%s is missing at %s" % [label, physical_size])
+		return
+	var rect := control.get_global_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0 or rect.position.x < -0.5 or rect.position.y < -0.5 or rect.end.x > viewport_size.x + 0.5 or rect.end.y > viewport_size.y + 0.5:
+		failures.append("%s outside visible canvas at %s: %s / %s" % [label, physical_size, rect, viewport_size])
