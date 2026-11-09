@@ -60,7 +60,7 @@ try {
 await rm(destinationDir, { recursive: true, force: true });
 await mkdir(destinationDir, { recursive: true });
 for (const filename of await readdir(sourceDir)) {
-  if (generatedMetadata.has(filename)) continue;
+  if (generatedMetadata.has(filename) || filename.endsWith('.import') || filename === 'index.png') continue;
   await cp(path.join(sourceDir, filename), path.join(destinationDir, filename), {
     recursive: true,
     force: true,

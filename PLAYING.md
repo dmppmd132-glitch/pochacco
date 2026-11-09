@@ -8,7 +8,7 @@
 - **Android**：在 Chrome 開啟網址，使用「安裝遊戲」按鈕，或 Chrome 選單中的「安裝應用程式／新增至主畫面」。
 - **桌面 Chrome／Edge**：點載入畫面中的「安裝遊戲」或網址列的安裝圖示。
 
-首次遊玩需要網路並下載 Godot 執行檔及遊戲包，合計約 **53.7 MB**，建議使用 Wi-Fi 並等到標題畫面完整出現。PWA 的 Service Worker 已設定先快取外殼、並在載入遊戲時快取 WASM/PCK；但離線重新啟動與手機觸控手感尚未在實體裝置測試。清除網站資料會清除離線快取。Pages 網站由公開 repo 的 GitHub Actions workflow 部署；GitHub Pages 的發布說明見 [GitHub Pages 官方文件](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。
+遊戲網站上的 WASM 與 PCK 檔案未壓縮合計約 **53.6 MB（約 51.1 MiB）**；GitHub Pages 會以 gzip 傳輸，最近線上檢查的兩個主要檔案實際約 **24 MB**，另有網頁外殼及其他小檔案。首次使用建議連接穩定 Wi-Fi，載入畫面會顯示實際載入的 MB 數與百分比；下載完成後還需一些時間啟動遊戲。Service Worker 會在首次載入時快取 WASM/PCK，之後可離線遊玩；清除網站資料會清除離線快取。離線啟動及觸控手感尚未在實體手機全面測試。Pages 網站由公開 repo 的 GitHub Actions workflow 部署；發布方式見 [GitHub Pages 官方文件](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。
 
 ## 鍵盤操作
 

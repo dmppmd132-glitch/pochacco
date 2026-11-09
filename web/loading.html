@@ -67,6 +67,7 @@ Source SHA-256: 38f4c5f927f746b3dfa4c3a5d7edf0b7a3e828e27438418fa54f9e1565289412
     #loading progress::-webkit-progress-bar { background: #f2d4d8; border-radius: 20px; }
     #loading progress::-webkit-progress-value { background: #e87391; border-radius: 20px; }
     #loading progress::-moz-progress-bar { background: #e87391; border-radius: 20px; }
+    #loading-details { margin: -5px 0 0; min-height: 1.5em; color: #78646a; font-size: 13px; font-variant-numeric: tabular-nums; }
     #loading-notice, #loading-hint { margin: 0; max-width: min(420px, 82vw); line-height: 1.6; }
     #loading-hint { color: #78646a; font-size: 13px; }
     #loading button, #pwa-install { min-height: 44px; border: 2px solid #d66a83; border-radius: 18px; background: #fffaf0; color: #734653; padding: 9px 20px; cursor: pointer; font: inherit; font-weight: 700; }
@@ -84,9 +85,10 @@ Source SHA-256: 38f4c5f927f746b3dfa4c3a5d7edf0b7a3e828e27438418fa54f9e1565289412
     <h1 id="game-title"></h1>
     <p id="loading-status">正在載入點心島…</p>
     <progress id="loading-progress" aria-label="載入進度"></progress>
+    <p id="loading-details" aria-live="polite">正在準備載入資料…</p>
     <p id="loading-notice" hidden></p>
     <button id="loading-retry" type="button" hidden>重新載入</button>
-    <p id="loading-hint">可安裝為 PWA；首次完整載入後即可離線遊玩。</p>
+    <p id="loading-hint">首次約傳輸 24 MB（依網路與快取狀態而異）。資料下載後還會短暫啟動；成功載入一次後可離線遊玩。</p>
     <noscript>請啟用 JavaScript 才能遊玩。</noscript>
   </section>
   <button id="pwa-install" type="button" hidden>安裝遊戲</button>
@@ -98,6 +100,7 @@ Source SHA-256: 38f4c5f927f746b3dfa4c3a5d7edf0b7a3e828e27438418fa54f9e1565289412
       const loading = document.getElementById('loading');
       const status = document.getElementById('loading-status');
       const progress = document.getElementById('loading-progress');
+      const details = document.getElementById('loading-details');
       const notice = document.getElementById('loading-notice');
       const retry = document.getElementById('loading-retry');
       const installButton = document.getElementById('pwa-install');
@@ -174,13 +177,21 @@ Source SHA-256: 38f4c5f927f746b3dfa4c3a5d7edf0b7a3e828e27438418fa54f9e1565289412
         if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(current) || current < 0) {
           progress.removeAttribute('value');
           status.textContent = '正在載入點心島…';
+          details.textContent = '正在準備載入資料…';
           return;
         }
+        const loaded = Math.min(current, total);
+        const percent = Math.floor(loaded / total * 100);
+        const toMiB = (bytes) => (bytes / (1024 * 1024)).toFixed(1);
         progress.max = total;
-        progress.value = Math.min(current, total);
+        progress.value = loaded;
+        progress.setAttribute('aria-valuetext', `${percent}%`);
+        details.textContent = current >= total
+          ? `資料已載入 ${toMiB(total)} MB；正在編譯並啟動遊戲…`
+          : `已載入 ${toMiB(loaded)} / ${toMiB(total)} MB`;
         status.textContent = current >= total
           ? '正在啟動遊戲…'
-          : `${Math.floor(current / total * 100)}%`;
+          : `正在下載遊戲資料・${percent}%`;
       };
       const start = async () => {
         if (failed) return;
