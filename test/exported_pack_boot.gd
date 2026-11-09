@@ -18,8 +18,7 @@ func _run() -> void:
 	for required_path in [
 		"res://config/tuning.json",
 		"res://autoload/i18n.gd",
-		"res://localization/en.json",
-		"res://localization/zh-CN.json",
+		"res://localization/zh-TW.json",
 		"res://scripts/viewport_policy.gd",
 		"res://scripts/game_audio.gd",
 		"res://scripts/yarn_ball.gd",
@@ -78,27 +77,38 @@ func _run() -> void:
 		if not font.has_char(character.unicode_at(0)):
 			_fail("exported font is missing required glyph U+%04X" % character.unicode_at(0))
 			return
-	if font.fallbacks[0].data.size() > 1000000:
+	var chinese_font: Font = font.fallbacks[0]
+	while chinese_font is FontVariation:
+		chinese_font = (chinese_font as FontVariation).base_font
+	if not chinese_font is FontFile:
+		_fail("Traditional Chinese fallback is not backed by a FontFile")
+		return
+	if (chinese_font as FontFile).data.size() > 1000000:
 		_fail("exported Chinese font exceeds the 1 MB limit")
 		return
 	var i18n := root.get_node_or_null("I18n")
 	if i18n == null:
 		_fail("localization autoload missing from the exported PCK")
 		return
-	var english: Dictionary = i18n.catalog("en")
-	var chinese: Dictionary = i18n.catalog("zh-CN")
-	if english.is_empty() or english.keys() != chinese.keys():
-		_fail("exported localization catalogs are missing or have different keys")
+	var traditional_chinese: Dictionary = i18n.catalog("zh-TW")
+	if i18n.SUPPORTED_LOCALES != ["zh-TW"] or traditional_chinese.is_empty():
+		_fail("exported project must expose only the non-empty zh-TW catalog")
 		return
 	var previous_locale: String = i18n.get_locale()
-	i18n.set_locale("zh-CN")
-	if i18n.t("title.play") != "开始游戏" or i18n.t("hud.score", {"score": "123"}) != "分数\n123":
-		_fail("exported Chinese title/HUD localization is unavailable")
+	if previous_locale != "zh-TW":
+		_fail("exported project must start in zh-TW")
 		return
-	i18n.set_locale("en")
-	if i18n.t("title.play") != "LET'S PLAY":
-		_fail("exported English title localization is unavailable")
+	for unsupported_locale in ["en", "zh-CN"]:
+		if not i18n.catalog(unsupported_locale).is_empty() or i18n.set_locale(unsupported_locale):
+			_fail("unsupported locale must not be loaded or selectable: " + unsupported_locale)
+			return
+	if i18n.get_locale() != "zh-TW" or i18n.locale_for_system("en_US") != "zh-TW" or i18n.locale_for_system("zh-CN") != "zh-TW":
+		_fail("unsupported system locales must remain pinned to zh-TW")
 		return
+	for copy in ["嘟嘟與帕恰狗\n點心島的奇幻野餐", "第一章｜草莓蛋糕村", "開始冒險"]:
+		if not traditional_chinese.has(copy) or i18n.t(copy) != copy:
+			_fail("exported zh-TW title copy is unavailable: " + copy)
+			return
 	i18n.set_locale(previous_locale)
 	var main_scene_path: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
 	if main_scene_path.is_empty():
@@ -129,8 +139,16 @@ func _run() -> void:
 	root.add_child(game)
 	for i in SETTLE_FRAMES:
 		await process_frame
-	if game.get_node_or_null("PauseMenu") == null or game.get("pause_button") == null or game.get_node_or_null("VisualEffects") == null:
-		_fail("pause navigation or visual effects were not created by the exported game scene")
+	if not game.has_method("open_pause") or not game.has_method("resume_game") or game.get("dudu") == null or game.get("pochacco") == null:
+		_fail("Snack Isle gameplay scene did not initialize both companions and pause controls")
+		return
+	game.open_pause()
+	if not paused or game.get("pause_overlay") == null:
+		_fail("Snack Isle pause overlay did not open in the exported game scene")
+		return
+	game.resume_game()
+	if paused:
+		_fail("Snack Isle resume did not restore gameplay after pause")
 		return
 	if root.get_node_or_null("ViewportPolicy") == null:
 		_fail("viewport policy autoload is missing from the exported PCK")
