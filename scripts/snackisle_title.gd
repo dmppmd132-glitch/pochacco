@@ -116,6 +116,10 @@ func _build_title() -> void:
 	start_button.name = "StartAdventure"
 	start_button.pressed.connect(_start_game)
 	stack.add_child(start_button)
+	var chapter_two_button := _make_button("體驗第二章｜雲朵森林", false)
+	chapter_two_button.name = "StartChapterTwo"
+	chapter_two_button.pressed.connect(_start_chapter_two)
+	stack.add_child(chapter_two_button)
 	var footer := Label.new()
 	footer.name = "FooterHint"
 	footer.text = _l10n("粉紅大福 × 香蕉上衣 × 星星糖")
@@ -172,6 +176,7 @@ func _layout_title() -> void:
 		return
 	var view_size := get_viewport_rect().size
 	var compact := view_size.y < 700.0
+	var micro := view_size.y < 400.0
 	var width := view_size.x
 	title_panel.custom_minimum_size.x = minf(540.0, maxf(292.0, width - 28.0))
 	var content := title_panel.find_child("TitleContent", true, false) as VBoxContainer
@@ -186,16 +191,17 @@ func _layout_title() -> void:
 	var portraits := title_panel.find_children("CharacterPortrait", "TextureRect", true, false)
 	for node in portraits:
 		var portrait := node as TextureRect
-		portrait.custom_minimum_size = Vector2(86, 54) if compact else Vector2(108, 94)
+		portrait.custom_minimum_size = Vector2(78, 42) if micro else (Vector2(86, 54) if compact else Vector2(108, 94))
 	var game_title := title_panel.find_child("GameTitle", true, false) as Label
 	if game_title != null:
-		game_title.add_theme_font_size_override("font_size", 26 if compact else 34)
+		game_title.add_theme_font_size_override("font_size", 22 if micro else (26 if compact else 34))
 	var chapter := title_panel.find_child("GameChapter", true, false) as Label
 	if chapter != null:
-		chapter.add_theme_font_size_override("font_size", 17 if compact else 22)
+		chapter.add_theme_font_size_override("font_size", 15 if micro else (17 if compact else 22))
 	var story := title_panel.find_child("StoryText", true, false) as Label
 	if story != null:
 		story.text = _l10n("短版故事") if compact else _l10n("怪盜喵嗚偷走了草莓噴泉閥門，果醬快要淹到村子了。切換兩位夥伴、解開合作機關，找回閥門！")
+		story.visible = not micro
 		story.add_theme_font_size_override("font_size", 14 if compact else 17)
 	var controls := title_panel.find_child("ControlsHint", true, false) as Label
 	if controls != null:
@@ -204,6 +210,7 @@ func _layout_title() -> void:
 	var install_hint := title_panel.find_child("InstallHint", true, false) as Label
 	if install_hint != null:
 		install_hint.text = _l10n("短版PWA") if compact else _l10n("PWA 安裝：使用瀏覽器選單的「安裝應用程式／加入主畫面」。首次完整載入後可離線遊玩。")
+		install_hint.visible = not micro
 		install_hint.add_theme_font_size_override("font_size", 10 if compact else 13)
 	var footer := title_panel.find_child("FooterHint", true, false) as Label
 	if footer != null:
@@ -213,6 +220,10 @@ func _layout_title() -> void:
 	if start_button != null:
 		start_button.custom_minimum_size = Vector2(200, 42) if compact else Vector2(220, 54)
 		start_button.add_theme_font_size_override("font_size", 18 if compact else 22)
+	var chapter_two_button := title_panel.find_child("StartChapterTwo", true, false) as Button
+	if chapter_two_button != null:
+		chapter_two_button.custom_minimum_size = Vector2(200, 42) if compact else Vector2(220, 48)
+		chapter_two_button.add_theme_font_size_override("font_size", 14 if compact else 17)
 
 
 func _l10n(value: String, placeholders: Dictionary = {}) -> String:
@@ -220,4 +231,10 @@ func _l10n(value: String, placeholders: Dictionary = {}) -> String:
 
 
 func _start_game() -> void:
+	get_tree().set_meta("snackisle_chapter", 1)
+	get_tree().change_scene_to_file("res://scenes/game.tscn")
+
+
+func _start_chapter_two() -> void:
+	get_tree().set_meta("snackisle_chapter", 2)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")

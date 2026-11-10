@@ -72,10 +72,14 @@ func _check_title(physical_size: Vector2i) -> void:
 	var viewport_size: Vector2 = title.get_viewport_rect().size
 	var panel := title.find_child("DiaryCard", true, false) as Control
 	var start := title.find_child("StartAdventure", true, false) as Control
+	var chapter_two := title.find_child("StartChapterTwo", true, false) as Control
 	_check_rect(panel, viewport_size, "title panel", physical_size)
 	_check_rect(start, viewport_size, "start button", physical_size)
+	_check_rect(chapter_two, viewport_size, "chapter two button", physical_size)
 	if start != null and (start.size.x < 190.0 or start.size.y < 40.0):
 		failures.append("start button too small at %s: %s" % [physical_size, start.size])
+	if chapter_two != null and (chapter_two.size.x < 190.0 or chapter_two.size.y < 40.0):
+		failures.append("chapter two button too small at %s: %s" % [physical_size, chapter_two.size])
 	title.queue_free()
 	await process_frame
 

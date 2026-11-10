@@ -1,6 +1,6 @@
 {
   "assets": {
-    "assets/fonts/NotoSansTC-Big5Level1.ttf": {
+    "assets/fonts/NotoSansTC-Big5Level1-runtime.woff2": {
       "declaredUseEvidence": [],
       "generator": {},
       "inputs": [],
@@ -12,9 +12,9 @@
         "assets/fonts/noto_sans_tc_regular.tres"
       ],
       "regions": [],
-      "sha256": "sha256:ff80bd617d8aa539ed14a325aa80a38fd70b827023c18e83ebb693bc7840cbaf",
+      "sha256": "sha256:e1eaa1d7aee8b2386ec099d367605ae5245932ad94c3b478bb65ce6aacafe789",
       "shipped": true,
-      "size": 3392520,
+      "size": 968012,
       "source": {},
       "status": "present",
       "transformations": [],
@@ -24,6 +24,38 @@
         "assets/fonts/noto_sans_tc_regular.tres"
       ],
       "used": true,
+      "usedBy": [],
+      "versions": {
+        "sha256:10cc39d1aab2fce55663ac3225da7ecc8edcbb3018ddac65f3ccbf0ff3fe5eb8": {
+          "generator": {},
+          "inputs": [],
+          "license": {},
+          "origin": "unknown",
+          "regions": [],
+          "sha256": "sha256:10cc39d1aab2fce55663ac3225da7ecc8edcbb3018ddac65f3ccbf0ff3fe5eb8",
+          "size": 967796,
+          "source": {},
+          "transformations": [],
+          "usedBy": []
+        }
+      }
+    },
+    "assets/fonts/NotoSansTC-Big5Level1.ttf": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:ff80bd617d8aa539ed14a325aa80a38fd70b827023c18e83ebb693bc7840cbaf",
+      "shipped": false,
+      "size": 3392520,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
       "usedBy": []
     },
     "assets/share/favicon-32.png": {
@@ -1295,9 +1327,9 @@
         ]
       }
     ],
-    "pckSha256": "sha256:ca7ac9aa5e233cd8782b33412b71102b20960c92446308d7ff4f7fd26c22ab04",
+    "pckSha256": "sha256:0982db7740694fa82773f36ecc90859d7aaa4c9d896d642b11544209b6493876",
     "profile": "release",
-    "sourceFingerprint": "sha256:41cc30500458fd169e7db831f42452a9e48d8620c6cd8b5049b5896ef053e174"
+    "sourceFingerprint": "sha256:cd5f5bfe26e2170296345a650721787b19a859cbe71c8c64b9dbcadde4e136db"
   },
   "procedures": {},
   "summary": {
@@ -1330,7 +1362,7 @@
     },
     "files": {
       "downloaded": 0,
-      "retained": 54,
+      "retained": 55,
       "shipped": 47,
       "used": 19
     },
@@ -1366,7 +1398,7 @@
         "used": 14
       },
       "unknown": {
-        "retained": 12,
+        "retained": 13,
         "shipped": 5,
         "used": 5
       }

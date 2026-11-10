@@ -21,7 +21,9 @@ func _run() -> void:
 	for _frame in 3:
 		await process_frame
 	var start_button: Button = title.find_child("StartAdventure", true, false)
+	var chapter_two_button: Button = title.find_child("StartChapterTwo", true, false)
 	_check(start_button != null and start_button.text == "開始冒險", "title screen presents the playable game entry")
+	_check(chapter_two_button != null and chapter_two_button.text == "體驗第二章｜雲朵森林", "title screen provides a localized Chapter Two entry")
 	_check(title.find_child("GameTitle", true, false) != null, "title card is present")
 	if start_button == null:
 		_finish()
@@ -175,6 +177,60 @@ func _run() -> void:
 			break
 	Input.action_release("move_right")
 	_check(game.run_over and game.result_overlay != null, "walking to the recovered strawberry fountain valve opens the chapter result")
+	var has_chapter_two_button := false
+	for node in game.result_overlay.find_children("*", "Button", true, false):
+		if (node as Button).text == "前往第二章":
+			has_chapter_two_button = true
+	_check(has_chapter_two_button, "Chapter One result offers a direct continuation to Chapter Two")
+	game.start_chapter_two()
+	for _frame in 10:
+		await process_frame
+	var cloud_game := current_scene
+	_check(cloud_game != null and cloud_game.chapter_index == 2, "continuing from Chapter One loads the cloud-forest chapter")
+	if cloud_game == null or cloud_game.chapter_index != 2:
+		_finish()
+		return
+	_check(cloud_game.chapter_label.text == "第二章｜棉花糖雲朵森林", "Chapter Two chapter title is localized in the HUD")
+	_check(cloud_game.is_cloud_updraft(1100.0) and not cloud_game.is_cloud_updraft(1800.0), "cloud updraft zones are active only in the new chapter")
+	cloud_game.switch_character()
+	cloud_game.pochacco.global_position = Vector2(cloud_game.cloud_windmill_x - 280.0, cloud_game.GROUND_Y - 27.0)
+	cloud_game.pochacco.velocity = Vector2.ZERO
+	cloud_game.pochacco.facing = 1.0
+	cloud_game.perform_attack(cloud_game.pochacco)
+	for _frame in 45:
+		await physics_frame
+	_check(cloud_game.cloud_windmill_active and cloud_game.cloud_gate == null, "Pochacco's returning banana rings the windmill and opens the cloud gate")
+	cloud_game.pochacco.global_position = Vector2(cloud_game.plate_x, cloud_game.GROUND_Y - 27.0)
+	cloud_game.pochacco.velocity = Vector2.ZERO
+	for _frame in 4:
+		await physics_frame
+	_check(cloud_game.plate_is_held(), "Pochacco holds the cloud footplate for Dudu")
+	cloud_game.dudu.global_position = Vector2(3400.0, cloud_game.GROUND_Y - 27.0)
+	cloud_game.dudu.facing = 1.0
+	cloud_game.dudu.velocity = Vector2.ZERO
+	cloud_game.perform_attack(cloud_game.dudu)
+	for _frame in 16:
+		await physics_frame
+	_check(cloud_game.bridge_cookie == null, "Dudu rolls through the cloud bridge gate while Pochacco holds the plate")
+	cloud_game.pochacco.global_position = Vector2(4050.0, cloud_game.GROUND_Y - 27.0)
+	cloud_game.pochacco.velocity = Vector2.ZERO
+	cloud_game.pochacco.facing = 1.0
+	cloud_game.boss_x = cloud_game.cloud_boss_x
+	cloud_game.perform_attack(cloud_game.pochacco)
+	for _frame in 38:
+		await physics_frame
+	_check(cloud_game.boss_exposed_time > 0.0, "Pochacco's boomerang reveals the cloud spirit's moon-bell core")
+	cloud_game.switch_character()
+	cloud_game.dudu.global_position = Vector2(cloud_game.boss_x, cloud_game.GROUND_Y - 132.0)
+	cloud_game.dudu.velocity = Vector2.ZERO
+	for _frame in 2:
+		await physics_frame
+	cloud_game.dudu.start_ground_pound()
+	for _frame in 14:
+		await physics_frame
+	_check(cloud_game.boss_defeated, "Dudu's ground pound sends the cloud spirit away as a gentle sparkle burst")
+	cloud_game.finish_level()
+	_check(cloud_game.run_over and cloud_game.result_overlay != null, "recovering the moon-honey bell completes Chapter Two")
 	_finish()
 
 
@@ -187,7 +243,7 @@ func _finish() -> void:
 	for message in failures:
 		push_error("[SNACKISLE_SMOKE_FAIL] " + message)
 	if failures.is_empty():
-		print("[SNACKISLE_SMOKE_PASS] title, zh-TW, duo switch/follow, both abilities, clue-gated wall, hug gate, bridge plate, health, star/ingredient backpack, banana-peel boss slip, ground-pound victory, pause and result")
+		print("[SNACKISLE_SMOKE_PASS] title, zh-TW, duo switch/follow, Chapter One mechanics/result, Chapter Two windmill/cloud gate/footplate/bridge, cloud-spirit boss and moon-bell result")
 	var audio := root.get_node_or_null("GameAudio")
 	if audio != null and audio.has_method("stop_game"):
 		audio.stop_game()

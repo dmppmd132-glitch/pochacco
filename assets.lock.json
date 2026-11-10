@@ -51,9 +51,9 @@
   },
   "assets": {
     "assets/fonts/NotoSansTC-Big5Level1-runtime.woff2": {
-      "path": "/manus-storage/game/sha256/7d8625a5ea8afc55011940ed62dfb68772cbbd56987f3cc20940f745c4a0ab99.woff2",
-      "sha256": "sha256:7d8625a5ea8afc55011940ed62dfb68772cbbd56987f3cc20940f745c4a0ab99",
-      "size": 963784,
+      "path": "/manus-storage/game/sha256/e1eaa1d7aee8b2386ec099d367605ae5245932ad94c3b478bb65ce6aacafe789.woff2",
+      "sha256": "sha256:e1eaa1d7aee8b2386ec099d367605ae5245932ad94c3b478bb65ce6aacafe789",
+      "size": 968012,
       "assetType": "font",
       "groupId": "traditional-chinese-fonts",
       "used": true

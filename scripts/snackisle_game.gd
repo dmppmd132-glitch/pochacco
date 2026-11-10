@@ -8,6 +8,12 @@ const GROUND_Y := 620.0
 const GRAVITY := 1450.0
 const JUMP_SPEED := 560.0
 
+var chapter_index := 1
+var cloud_windmill_active := false
+var cloud_gate
+var cloud_windmill_x := 1650.0
+var cloud_boss_x := 4250.0
+
 var dudu
 var pochacco
 var camera: Camera2D
@@ -16,6 +22,7 @@ var hud_root: Control
 var hearts_view: Control
 var stars_label: Label
 var ingredients_label: Label
+var chapter_label: Label
 var objective_label: Label
 var toast_label: Label
 var bridge_platform
@@ -93,6 +100,15 @@ class PastryPlatform extends StaticBody2D:
 		elif flavor == "bridge":
 			base = Color("#dca165")
 			icing = Color("#fff1cb")
+		elif flavor == "mint":
+			base = Color("#a7d4bb")
+			icing = Color("#e8f8df")
+		elif flavor == "cloud":
+			base = Color("#c6e5ed")
+			icing = Color("#f8fff8")
+		elif flavor == "wafer":
+			base = Color("#dfc28b")
+			icing = Color("#fff0c9")
 		draw_rect(bounds, base, true)
 		draw_rect(Rect2(bounds.position, Vector2(size.x, minf(13.0, size.y))), icing, true)
 		draw_line(Vector2(bounds.position.x, bounds.position.y + 14), Vector2(bounds.end.x, bounds.position.y + 14), Color("#a7655d"), 3.0, true)
@@ -134,6 +150,12 @@ class PastryBlock extends StaticBody2D:
 			draw_rect(bounds, Color("#e9a9a5"), true)
 			draw_rect(Rect2(bounds.position, Vector2(size.x, 14)), Color("#fff1d2"), true)
 			draw_circle(Vector2.ZERO, 13, Color("#f5cf6d"))
+		elif kind == "cloud_gate":
+			draw_rect(bounds, Color("#a9cfd7"), true)
+			for cloud_x in [-16.0, 0.0, 16.0]:
+				draw_circle(Vector2(cloud_x, -28), 17.0, Color("#f5fff7"))
+				draw_circle(Vector2(cloud_x, 22), 17.0, Color("#f5fff7"))
+			draw_circle(Vector2.ZERO, 8.0, Color("#e9bd5f"))
 		else:
 			draw_rect(bounds, Color("#d99a58"), true)
 			draw_rect(Rect2(bounds.position, Vector2(size.x, 12)), Color("#fff1ce"), true)
@@ -179,6 +201,7 @@ class StarCandy extends Area2D:
 
 class StrawberryFood extends Area2D:
 	var game
+	var kind := "strawberry"
 	var base_y := 0.0
 	var phase := 0.0
 
@@ -199,6 +222,13 @@ class StrawberryFood extends Area2D:
 		queue_redraw()
 
 	func _draw() -> void:
+		if kind == "cotton":
+			draw_circle(Vector2(-7, 1), 9.0, Color("#f6c6db"))
+			draw_circle(Vector2(2, -5), 10.0, Color("#fbe0ef"))
+			draw_circle(Vector2(10, 1), 8.0, Color("#ecc0df"))
+			draw_line(Vector2(0, 6), Vector2(1, 15), Color("#9ecbb1"), 3.0, true)
+			draw_circle(Vector2(-4, -5), 2.0, Color("#fffdf2"))
+			return
 		var berry := PackedVector2Array([Vector2(0, 15), Vector2(-12, 4), Vector2(-12, -3), Vector2(-7, -9), Vector2(-2, -8), Vector2(0, -4), Vector2(4, -9), Vector2(10, -7), Vector2(12, 0), Vector2(8, 7)])
 		draw_colored_polygon(berry, Color("#e85d72"))
 		var leaves := PackedVector2Array([Vector2(-10, -7), Vector2(-5, -14), Vector2(-1, -8), Vector2(1, -15), Vector2(5, -8), Vector2(11, -9), Vector2(6, -3), Vector2(-5, -3)])
@@ -395,6 +425,8 @@ class Buddy extends CharacterBody2D:
 			velocity.y = maxf(velocity.y, 0.0)
 		else:
 			velocity.y += game.GRAVITY * delta
+			if game.is_cloud_updraft(global_position.x):
+				velocity.y -= 430.0 * delta
 		var touch_jump: bool = game.consume_touch_jump() if controlled else false
 		if controlled and (Input.is_action_just_pressed("jump") or touch_jump) and on_floor_before and landing_lock <= 0.0:
 			velocity.y = -game.JUMP_SPEED
@@ -455,12 +487,14 @@ class Buddy extends CharacterBody2D:
 				elif collider.is_in_group("team_gate"):
 					game.show_toast("先讓嘟嘟站上大福按鈕，再按 F 集合！")
 				elif collider.is_in_group("bridge_cookie"):
-					if is_dudu and roll_time > 0.0 and game.plate_pressed:
+					if is_dudu and roll_time > 0.0 and game.plate_is_held():
 						game.break_barrier(collider)
 					else:
-						game.show_toast("帕恰狗要留在果醬河控制踏板上喔！")
+						game.show_toast("帕恰狗要留在雲朵踏板上喔！" if game.chapter_index == 2 else "帕恰狗要留在果醬河控制踏板上喔！")
+				elif collider.is_in_group("cloud_gate"):
+					game.show_toast("先讓帕恰狗用香蕉迴旋鏢敲響雲朵風車！")
 				elif collider.is_in_group("boss_gate") and not game.boss_defeated:
-					game.show_toast("先讓奶油怪踩上香蕉皮，再用嘟嘟屁屁坐擊！")
+					game.show_toast("用帕恰狗的香蕉迴旋鏢敲暈雲朵風靈，再讓嘟嘟屁屁坐擊！" if game.chapter_index == 2 else "先讓奶油怪踩上香蕉皮，再用嘟嘟屁屁坐擊！")
 		if absf(velocity.x) > 0.1 and not is_on_floor():
 			velocity.x = move_toward(velocity.x, direction * speed, 800.0 * delta)
 		if is_on_floor() and ground_pounding:
@@ -548,12 +582,14 @@ class Buddy extends CharacterBody2D:
 
 
 func _ready() -> void:
+	chapter_index = clampi(int(get_tree().get_meta("snackisle_chapter", 1)), 1, 2)
 	_ensure_input_actions()
 	build_world()
 	spawn_buddies()
 	build_camera()
 	build_hud()
-	show_toast("怪盜喵嗚偷走了噴泉閥門！先讓嘟嘟跳上戚風蛋糕收集星星糖。")
+	show_toast(_l10n("章二開場提示") if chapter_index == 2 else "怪盜喵嗚偷走了噴泉閥門！先讓嘟嘟跳上戚風蛋糕收集星星糖。")
+	_update_objective()
 	queue_redraw()
 
 
@@ -585,11 +621,18 @@ func _l10n(value: String, placeholders: Dictionary = {}) -> String:
 	return get_node("/root/I18n").t(value, placeholders)
 
 
+func _chapter_title() -> String:
+	return _l10n("第二章｜棉花糖雲朵森林") if chapter_index == 2 else _l10n("第一章｜草莓蛋糕村")
+
+
 func texture_for(is_dudu: bool) -> Texture2D:
 	return DUDU_TEXTURE if is_dudu else POCHACCO_TEXTURE
 
 
 func build_world() -> void:
+	if chapter_index == 2:
+		_build_cloud_world()
+		return
 	_add_platform(0, GROUND_Y, 2120, 220, "strawberry")
 	_add_platform(2720, GROUND_Y, 330, 220, "cake")
 	_add_platform(3380, GROUND_Y, 1820, 220, "strawberry")
@@ -634,6 +677,41 @@ func build_world() -> void:
 	plate_x = 2940.0
 
 
+func _build_cloud_world() -> void:
+	_add_platform(0, GROUND_Y, 980, 220, "mint")
+	_add_platform(1260, GROUND_Y, 830, 220, "mint")
+	_add_platform(2380, GROUND_Y, 900, 220, "mint")
+	_add_platform(3650, GROUND_Y, 1550, 220, "mint")
+	_add_platform(420, 500, 190, 26, "cloud", true)
+	_add_platform(730, 420, 180, 24, "wafer")
+	_add_platform(1030, 500, 180, 24, "cloud", true)
+	_add_platform(1320, 500, 200, 24, "cloud")
+	_add_platform(1570, 455, 180, 24, "wafer")
+	_add_platform(2040, 505, 180, 24, "cloud", true)
+	_add_platform(2150, 465, 190, 24, "cloud")
+	_add_platform(2310, 515, 165, 24, "wafer")
+	_add_platform(2510, 510, 185, 24, "cloud", true)
+	_add_platform(2800, 448, 190, 24, "wafer")
+	_add_platform(3060, 500, 180, 24, "cloud")
+	cloud_windmill_x = 1650.0
+	cloud_gate = _add_barrier(1920, 545, Vector2(48, 160), "cloud_gate")
+	plate_x = 3160.0
+	bridge_start = 3280.0
+	_add_platform(bridge_start, 475, 370, 24, "cloud")
+	bridge_platform = get_child(get_child_count() - 1)
+	bridge_cookie = _add_barrier(3465, 548, Vector2(52, 140), "bridge_cookie")
+	boss_gate = _add_barrier(4660, 545, Vector2(44, 150), "boss_gate")
+	cloud_windmill_active = false
+	plate_pressed = false
+	boss_x = cloud_boss_x
+	bubble_positions = [Vector2(2680, 520), Vector2(3900, 530), Vector2(4060, 475)]
+	bubble_stun_times = [0.0, 0.0, 0.0]
+	for pos in [Vector2(390, 525), Vector2(510, 465), Vector2(770, 375), Vector2(1050, 462), Vector2(1350, 470), Vector2(1640, 420), Vector2(2080, 468), Vector2(2300, 477), Vector2(2540, 465), Vector2(2835, 395), Vector2(3090, 465), Vector2(3320, 445), Vector2(3780, 540), Vector2(4020, 455), Vector2(4480, 520), Vector2(4870, 530)]:
+		_add_star(pos)
+	for pos in [Vector2(820, 382), Vector2(1450, 455), Vector2(2550, 470), Vector2(3000, 460), Vector2(4080, 490)]:
+		_add_ingredient(pos, "cotton")
+
+
 var plate_x := 2940.0
 var bridge_start := 3050.0
 
@@ -668,9 +746,10 @@ func _add_star(pos: Vector2) -> void:
 	add_child(candy)
 
 
-func _add_ingredient(pos: Vector2) -> void:
+func _add_ingredient(pos: Vector2, kind := "strawberry") -> void:
 	var ingredient := StrawberryFood.new()
 	ingredient.game = self
+	ingredient.kind = kind
 	ingredient.position = pos
 	add_child(ingredient)
 
@@ -755,11 +834,12 @@ func build_hud() -> void:
 	ingredients_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	inventory_row.add_child(ingredients_label)
 	left_stack.add_child(inventory_row)
-	var chapter := Label.new()
-	chapter.text = _l10n("第一章｜草莓蛋糕村")
-	chapter.add_theme_font_size_override("font_size", 14)
-	chapter.add_theme_color_override("font_color", Color("#ac6371"))
-	left_stack.add_child(chapter)
+	chapter_label = Label.new()
+	chapter_label.name = "GameChapter"
+	chapter_label.text = _chapter_title()
+	chapter_label.add_theme_font_size_override("font_size", 14)
+	chapter_label.add_theme_color_override("font_color", Color("#ac6371"))
+	left_stack.add_child(chapter_label)
 	objective_label = Label.new()
 	objective_label.name = "Objective"
 	objective_label.text = _l10n("尋回草莓噴泉閥門")
@@ -1028,7 +1108,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func perform_attack(buddy: Buddy) -> void:
 	if buddy.is_dudu:
 		buddy.begin_roll()
-		show_toast("嘟嘟滾滾衝刺！撞碎巧克力和夾心餅乾吧！")
+		show_toast("嘟嘟滾滾衝刺！撞開雲餅橋閘吧！" if chapter_index == 2 else "嘟嘟滾滾衝刺！撞碎巧克力和夾心餅乾吧！")
 	else:
 		var banana := BananaBoomerang.new()
 		banana.game = self
@@ -1055,6 +1135,15 @@ func detect_clues() -> void:
 	if active_is_dudu():
 		show_toast("切換帕恰狗，使用 E 偵探嗅嗅找線索！")
 		return
+	if chapter_index == 2:
+		if absf(pochacco.global_position.x - cloud_windmill_x) <= 440.0:
+			clues_visible = true
+			clue_time = 9.0
+			show_toast("帕恰狗嗅到風鈴的氣味！用香蕉迴旋鏢敲響風車，雲門就會打開。")
+		else:
+			show_toast("帕恰狗貼地嗅嗅……風鈴線索就在前方的雲朵風車附近。")
+		queue_redraw()
+		return
 	if absf(pochacco.global_position.x - 1560.0) <= 390.0:
 		clues_visible = true
 		clue_time = 9.0
@@ -1070,18 +1159,23 @@ func break_barrier(block: Node) -> void:
 	if block.is_in_group("hidden_wall") and not clues_visible:
 		show_toast("先切換帕恰狗使用 E 偵探嗅嗅，找出牆上的腳印！")
 		return
-		if block.is_in_group("team_gate") and not team_weight_activated:
-			show_toast("這個大福機關要兩個夥伴一起壓！站在按鈕上按 F。")
-			return
-	if block.is_in_group("bridge_cookie") and not plate_pressed:
-		show_toast("帕恰狗必須踩住果醬河控制踏板，橋才會降下！")
+	if block.is_in_group("team_gate") and not team_weight_activated:
+		show_toast("這個大福機關要兩個夥伴一起壓！站在按鈕上按 F。")
+		return
+	if block.is_in_group("bridge_cookie") and not plate_is_held():
+		show_toast("帕恰狗必須踩住雲朵踏板，浮雲橋才會降下！" if chapter_index == 2 else "帕恰狗必須踩住果醬河控制踏板，橋才會降下！")
+		return
+	if block.is_in_group("cloud_gate") and not cloud_windmill_active:
+		show_toast("先讓帕恰狗用香蕉迴旋鏢敲響雲朵風車！")
 		return
 	var burst_at: Vector2 = block.global_position
 	if block.is_in_group("hidden_wall"):
-			clues_visible = false
-			show_toast("隱藏牆碎成星星糖！密道打開了。")
+		clues_visible = false
+		show_toast("隱藏牆碎成星星糖！密道打開了。")
 	elif block.is_in_group("bridge_cookie"):
-		show_toast("夾心餅乾碎開，吊橋通路打通！")
+		show_toast("雲餅橋閘 Q 彈散開！通往風靈的路打通了。" if chapter_index == 2 else "夾心餅乾碎開，吊橋通路打通！")
+	elif block.is_in_group("cloud_gate"):
+		show_toast("雲門已隨風鈴聲打開！")
 	else:
 		show_toast("雙重重量機關啟動！帕恰狗撲進嘟嘟懷裡！")
 	spawn_burst(burst_at, Color("#f389a8"))
@@ -1096,6 +1190,9 @@ func break_barrier(block: Node) -> void:
 
 
 func request_gather() -> void:
+	if chapter_index == 2:
+		show_toast("第二章的合作機關由帕恰狗踩住雲朵踏板，再切換嘟嘟滾破橋閘！")
+		return
 	if not active_is_dudu():
 		show_toast("先切回嘟嘟，站在粉紅大福按鈕上再按 F 集合！")
 		return
@@ -1124,7 +1221,7 @@ func on_jump(buddy: Buddy) -> void:
 
 func on_trampoline(buddy: Buddy) -> void:
 	buddy.squash_time = 0.28
-	show_toast("戚風蛋糕 Q 彈起飛！跳上餅乾平台收集星星糖！")
+	show_toast("棉花糖雲朵 Q 彈起飛！藉上升氣流跳上餅乾雲收集星星糖！" if chapter_index == 2 else "戚風蛋糕 Q 彈起飛！跳上餅乾平台收集星星糖！")
 	spawn_burst(buddy.global_position + Vector2(0, 22), Color("#ffda7b"))
 
 
@@ -1134,7 +1231,7 @@ func on_buddy_moved(_buddy: Buddy) -> void:
 		if is_instance_valid(bridge_platform):
 			bridge_platform.position.y = 535.0 + bridge_platform.size.y * 0.5
 			bridge_platform.queue_redraw()
-		show_toast("帕恰狗踩住踏板了！切回嘟嘟，用滾滾衝刺破開夾心餅乾。")
+		show_toast("帕恰狗踩住雲朵踏板了！切回嘟嘟，滾破雲餅橋閘。" if chapter_index == 2 else "帕恰狗踩住踏板了！切回嘟嘟，用滾滾衝刺破開夾心餅乾。")
 		_update_objective()
 		queue_redraw()
 	if is_instance_valid(dudu) and is_instance_valid(pochacco) and dudu.roll_time > 0.0 and dudu.global_position.distance_to(pochacco.global_position) < 58.0 and team_hug_time <= 0.0:
@@ -1155,7 +1252,13 @@ func follow_gap(buddy: Buddy) -> float:
 
 
 func is_mousse(x: float) -> bool:
+	if chapter_index == 2:
+		return false
 	return x >= 1160.0 and x <= 1400.0
+
+
+func is_cloud_updraft(x: float) -> bool:
+	return chapter_index == 2 and ((x >= 930.0 and x <= 1260.0) or (x >= 2200.0 and x <= 2460.0) or (x >= 3650.0 and x <= 3860.0))
 
 
 func plate_is_held() -> bool:
@@ -1177,12 +1280,15 @@ func collect_ingredient(ingredient: StrawberryFood) -> void:
 	strawberry_ingredients += 1
 	ingredients_label.text = _l10n("食材 {count}", {"count": "%02d" % strawberry_ingredients})
 	spawn_burst(ingredient.global_position, Color("#e85d72"))
-	show_toast("草莓食材加入小雞背包！")
+	show_toast("棉花糖食材加入小雞背包！" if chapter_index == 2 else "草莓食材加入小雞背包！")
 	ingredient.queue_free()
 
 
 func drop_banana_peel(buddy: Buddy) -> void:
 	if buddy.is_dudu:
+		return
+	if chapter_index == 2:
+		show_toast("雲朵風靈不怕香蕉皮！用香蕉迴旋鏢敲暈牠，再切換嘟嘟坐擊鈴心。")
 		return
 	banana_peel_position = buddy.global_position + Vector2(buddy.facing * 58.0, 20.0)
 	banana_peel_placed = true
@@ -1191,6 +1297,21 @@ func drop_banana_peel(buddy: Buddy) -> void:
 
 
 func check_boomerang_hit(shot: BananaBoomerang) -> void:
+	if chapter_index == 2:
+		if not cloud_windmill_active and shot.global_position.distance_to(Vector2(cloud_windmill_x, GROUND_Y - 120.0)) < 52.0:
+			cloud_windmill_active = true
+			if is_instance_valid(cloud_gate):
+				spawn_burst(cloud_gate.global_position, Color("#d8f4ed"))
+				cloud_gate.queue_free()
+				cloud_gate = null
+			spawn_burst(Vector2(cloud_windmill_x, GROUND_Y - 120.0), Color("#f6d570"))
+			show_toast("雲朵風鈴響起！雲門打開，前方氣流也變得柔和了。")
+			_update_objective()
+		if not boss_defeated and boss_exposed_time <= 0.0 and shot.global_position.distance_to(Vector2(boss_x, GROUND_Y - 75.0)) < 62.0:
+			boss_exposed_time = 4.0
+			spawn_burst(Vector2(boss_x, GROUND_Y - 58.0), Color("#f6dc82"))
+			show_toast("帕恰狗的迴旋鏢敲暈風靈！月光鈴心露出來了，換嘟嘟從高處坐擊！")
+			_update_objective()
 	for index in bubble_positions.size():
 		if bubble_stun_times[index] > 0.0:
 			continue
@@ -1210,7 +1331,7 @@ func resolve_ground_pound(buddy: Buddy) -> void:
 		banana_peel_placed = false
 		spawn_burst(Vector2(boss_x, GROUND_Y - 52), Color("#ffd44f"))
 		spawn_burst(Vector2(boss_x + 24, GROUND_Y - 38), Color("#f48aa8"))
-		show_toast("屁屁坐擊命中核心！哼哼奶油怪變成星星糖飛走了！")
+		show_toast("屁屁坐擊敲響月光鈴心！棉花糖風靈化成彩虹星星飛走了！" if chapter_index == 2 else "屁屁坐擊命中核心！哼哼奶油怪變成星星糖飛走了！")
 		if is_instance_valid(boss_gate):
 			boss_gate.queue_free()
 			boss_gate = null
@@ -1230,6 +1351,18 @@ func show_toast(message: String) -> void:
 
 func _update_objective() -> void:
 	if objective_label == null:
+		return
+	if chapter_index == 2:
+		if boss_defeated:
+			objective_label.text = _l10n("找到右側的月光蜂蜜鈴，平息棉花糖風暴。")
+		elif boss_exposed_time > 0.0:
+			objective_label.text = _l10n("風靈的鈴心露出來了！切換嘟嘟，從高處屁屁坐擊。")
+		elif plate_pressed:
+			objective_label.text = _l10n("帕恰狗留在雲朵踏板；切回嘟嘟滾破雲餅橋閘。")
+		elif cloud_windmill_active:
+			objective_label.text = _l10n("風鈴打開雲門了！穿過浮雲橋，找到雲朵踏板。")
+		else:
+			objective_label.text = _l10n("用帕恰狗偵探嗅嗅找出風鈴，再以香蕉鏢敲響雲朵風車。")
 		return
 	if boss_defeated:
 		objective_label.text = _l10n("奶油怪已化成星星糖！找到右側草莓噴泉閥門。")
@@ -1327,6 +1460,14 @@ func on_buddy_arrived(_buddy: Buddy) -> void:
 
 func on_buddy_moved_checkpoint_check() -> void:
 	var active = get_active_buddy()
+	if chapter_index == 2:
+		if active.global_position.x > 1450.0 and checkpoint_x < 1450.0:
+			checkpoint_x = 1480.0
+			show_toast("棉花糖林小徑檢查點已記下！")
+		elif active.global_position.x > 3750.0 and checkpoint_x < 3750.0:
+			checkpoint_x = 3780.0
+			show_toast("雲朵橋另一端安全！前方就是風靈的高塔。")
+		return
 	if active.global_position.x > 1840.0 and checkpoint_x < 1840.0:
 		checkpoint_x = 1860.0
 		show_toast("摸到草莓蛋糕村的小路檢查點了！")
@@ -1345,7 +1486,10 @@ func _process(delta: float) -> void:
 	clue_time = maxf(0.0, clue_time - delta)
 	if clue_time <= 0.0:
 		clues_visible = false
+	var was_boss_exposed := boss_exposed_time > 0.0
 	boss_exposed_time = maxf(0.0, boss_exposed_time - delta)
+	if chapter_index == 2 and was_boss_exposed and boss_exposed_time <= 0.0:
+		_update_objective()
 	for index in bubble_stun_times.size():
 		bubble_stun_times[index] = maxf(0.0, bubble_stun_times[index] - delta)
 	if not boss_defeated:
@@ -1363,7 +1507,8 @@ func _process(delta: float) -> void:
 			for buddy in [dudu, pochacco]:
 				if is_instance_valid(buddy) and buddy.global_position.distance_to(Vector2(boss_x, GROUND_Y - 56)) < 62.0 and boss_contact_cooldown <= 0.0:
 					boss_contact_cooldown = 1.4
-					damage_source("奶油怪 Q 彈撞來了，眼汪汪彈開！", buddy.global_position)
+					var contact_message := "風靈溫柔地撞來，眼汪汪彈開！" if chapter_index == 2 else "奶油怪 Q 彈撞來了，眼汪汪彈開！"
+					damage_source(contact_message, buddy.global_position)
 					break
 		if banana_peel_placed:
 			boss_x = move_toward(boss_x, banana_peel_position.x, delta * 40.0)
@@ -1372,7 +1517,8 @@ func _process(delta: float) -> void:
 			continue
 		for buddy in [dudu, pochacco]:
 			if is_instance_valid(buddy) and buddy.global_position.distance_to(bubble_positions[index]) < 34.0:
-				_damage_and_return("奶油泡彈了一下，快用香蕉迴旋鏢把它打暈！", true)
+				var bubble_message := "棉花糖小雲泡 Q 彈碰到啦，快用香蕉迴旋鏢把它輕輕打暈！" if chapter_index == 2 else "奶油泡彈了一下，快用香蕉迴旋鏢把它打暈！"
+				_damage_and_return(bubble_message, true)
 				break
 	var active = get_active_buddy()
 	if is_instance_valid(active):
@@ -1383,7 +1529,7 @@ func _process(delta: float) -> void:
 			camera.global_position = camera.global_position.lerp(desired, 1.0 - exp(-delta * 6.5))
 		on_buddy_moved_checkpoint_check()
 		if not boss_defeated and active.global_position.x >= 4960.0:
-			show_toast("噴泉閥門被奶油怪守著！先讓牠踩香蕉皮，再用嘟嘟坐擊核心。")
+			show_toast("月光蜂蜜鈴被風靈守著！先用帕恰狗的香蕉鏢敲暈牠，再用嘟嘟坐擊鈴心。" if chapter_index == 2 else "噴泉閥門被奶油怪守著！先讓牠踩香蕉皮，再用嘟嘟坐擊核心。")
 		elif boss_defeated and active.global_position.distance_to(Vector2(5000.0, GROUND_Y - 34.0)) < 75.0:
 			finish_level()
 	if toast_time > 0.0:
@@ -1398,6 +1544,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if chapter_index == 2:
+		_draw_cloud_chapter()
+		return
 	draw_rect(Rect2(0, -720, WORLD_WIDTH, 1500), Color("#fff0e6"), true)
 	# Distant frosting hills create a soft crayon-doodle horizon.
 	for index in 11:
@@ -1502,6 +1651,98 @@ func _draw() -> void:
 		draw_circle(peel + Vector2(18, 3), 3.0, Color("#805246"))
 
 
+func _draw_cloud_chapter() -> void:
+	draw_rect(Rect2(0, -720, WORLD_WIDTH, 1500), Color("#e4f4f3"), true)
+	for index in 12:
+		var x := float(index) * 470.0 - 90.0
+		var height := 90.0 + float((index * 31) % 82)
+		draw_colored_polygon(PackedVector2Array([Vector2(x, GROUND_Y + 12), Vector2(x + 135, GROUND_Y - height), Vector2(x + 280, GROUND_Y - height * 0.68), Vector2(x + 440, GROUND_Y + 12)]), Color("#c6e5d4"))
+		for puff in 3:
+			draw_circle(Vector2(x + 90.0 + puff * 64.0, GROUND_Y - height * 0.46), 18.0, Color("#d7eee0"))
+	for index in 8:
+		var cloud_x := 250.0 + float(index) * 620.0
+		_draw_cloud(cloud_x, 135.0 + sin(time_alive * 0.5 + cloud_x * 0.01) * 17.0)
+	# Cotton-candy tree trunks and fluffy tops mark each stretch of the forest.
+	for index in 12:
+		var tree_x := 180.0 + float(index) * 430.0
+		var tree_height := 74.0 + float((index * 19) % 44)
+		draw_rect(Rect2(tree_x + 34.0, GROUND_Y - tree_height, 18.0, tree_height), Color("#a98c83"))
+		draw_circle(Vector2(tree_x + 30.0, GROUND_Y - tree_height - 12.0), 32.0, Color("#a8d4c2"))
+		draw_circle(Vector2(tree_x + 61.0, GROUND_Y - tree_height - 15.0), 29.0, Color("#b7dfcd"))
+		draw_circle(Vector2(tree_x + 45.0, GROUND_Y - tree_height - 35.0), 26.0, Color("#c5e7d8"))
+	# Gentle updraft ribbons show where jumps float a little longer.
+	for zone in [Vector2(1100, 530), Vector2(2330, 510), Vector2(3740, 520)]:
+		for ribbon in 4:
+			var ribbon_x: float = zone.x + sin(time_alive * 2.3 + ribbon) * 17.0 + ribbon * 11.0
+			var ribbon_y: float = zone.y - fmod(time_alive * 74.0 + ribbon * 47.0, 150.0)
+			draw_line(Vector2(ribbon_x, ribbon_y + 20.0), Vector2(ribbon_x - 8.0, ribbon_y - 14.0), Color("#86c8c5", 0.62), 4.0, true)
+	var font: Font = GAME_FONT
+	if font != null:
+		draw_string(font, Vector2(100, 332), _l10n("棉花糖雲朵森林"), HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color("#548c86"))
+		draw_string(font, Vector2(cloud_windmill_x, 464), _l10n("雲朵風車風鈴"), HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Color("#658d81"))
+		draw_string(font, Vector2(plate_x, 576), _l10n("雲朵踏板"), HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color("#658d81"))
+		draw_string(font, Vector2(cloud_boss_x, 462), _l10n("棉花糖風靈"), HORIZONTAL_ALIGNMENT_CENTER, -1, 21, Color("#658d81"))
+	# Windmill bell is the first chapter-two puzzle target.
+	var mill_center := Vector2(cloud_windmill_x, GROUND_Y - 124.0)
+	draw_line(mill_center + Vector2(0, 23), Vector2(cloud_windmill_x, GROUND_Y - 10), Color("#a98c83"), 6.0, true)
+	for blade in 4:
+		var angle := TAU * float(blade) / 4.0 + time_alive * (0.8 if not cloud_windmill_active else 0.25)
+		var tip := mill_center + Vector2(cos(angle), sin(angle)) * 37.0
+		draw_line(mill_center, tip, Color("#e9a8bd" if blade % 2 == 0 else "#9ecfc2"), 8.0, true)
+		draw_circle(tip, 5.0, Color("#fff5de"))
+	draw_circle(mill_center, 10.0, Color("#f5d678"))
+	if not cloud_windmill_active:
+		draw_arc(Vector2(cloud_windmill_x, GROUND_Y - 26.0), 24.0, PI, TAU, 18, Color("#e8bf5d"), 5.0, true)
+	# The cloud bridge dips when Pochacco holds the matching footplate.
+	draw_line(Vector2(bridge_start, 476), Vector2(bridge_start + 370, 476), Color("#91bdb6"), 6.0, true)
+	draw_line(Vector2(bridge_start + 18, 476), Vector2(bridge_start + 18, 535), Color("#91bdb6"), 4.0, true)
+	draw_line(Vector2(bridge_start + 352, 476), Vector2(bridge_start + 352, 535), Color("#91bdb6"), 4.0, true)
+	draw_circle(Vector2(plate_x, GROUND_Y - 12), 28.0, Color("#e6a7bf") if not plate_pressed else Color("#9bd3c2"))
+	draw_circle(Vector2(plate_x, GROUND_Y - 12), 17.0, Color("#fff4df"))
+	if clues_visible:
+		for mark in 5:
+			var clue_x := cloud_windmill_x - 145.0 + mark * 30.0
+			draw_circle(Vector2(clue_x, GROUND_Y - 20.0 - (mark % 2) * 7.0), 5.2, Color("#82b8a6"))
+			draw_circle(Vector2(clue_x + 5.0, GROUND_Y - 27.0 - (mark % 2) * 7.0), 3.2, Color("#d98ca4"))
+		draw_string(font, Vector2(cloud_windmill_x - 22, GROUND_Y - 170), "！", HORIZONTAL_ALIGNMENT_LEFT, -1, 27, Color("#b65d77"))
+	# Small puff wisps can be gently stunned with the returning banana.
+	for index in bubble_positions.size():
+		var puff := bubble_positions[index]
+		var squashed := bubble_stun_times[index] > 0.0
+		draw_circle(puff, 21.0 if not squashed else 17.0, Color("#f5fff8"))
+		draw_circle(puff + Vector2(-14, 4), 13.0, Color("#f5fff8"))
+		draw_circle(puff + Vector2(14, 4), 13.0, Color("#f5fff8"))
+		if not squashed:
+			draw_circle(puff + Vector2(-6, -2), 2.7, Color("#657b78"))
+			draw_circle(puff + Vector2(6, -2), 2.7, Color("#657b78"))
+		else:
+			draw_circle(puff + Vector2(0, -23), 4.0, Color("#f4d36f"))
+	# Soft wind spirit; its golden bell core appears for a limited window after a hit.
+	if not boss_defeated:
+		var spirit_center := Vector2(boss_x, GROUND_Y - 56.0)
+		var spirit_squash := Vector2(1.0, 0.8 if boss_exposed_time > 0.0 else 1.0 + sin(time_alive * 8.0) * 0.025)
+		draw_set_transform(spirit_center, sin(time_alive * 3.2) * 0.025, spirit_squash)
+		draw_circle(Vector2.ZERO, 45.0, Color("#d7eef0"))
+		draw_circle(Vector2(-24, -14), 26.0, Color("#effaf2"))
+		draw_circle(Vector2(24, -18), 24.0, Color("#effaf2"))
+		draw_circle(Vector2(-12, -4), 3.5, Color("#536b6b"))
+		draw_circle(Vector2(13, -4), 3.5, Color("#536b6b"))
+		if boss_exposed_time > 0.0:
+			draw_circle(Vector2(0, 15), 18.0, Color("#f2d26e"))
+			draw_line(Vector2(-9, 15), Vector2(9, 15), Color("#a87948"), 3.0, true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# The moon-honey bell marks the second chapter exit.
+	var bell_pos := Vector2(5000.0, GROUND_Y - 62.0)
+	draw_arc(bell_pos, 25.0, PI, TAU, 24, Color("#d8a84e"), 6.0, true)
+	draw_line(bell_pos + Vector2(-22, 0), bell_pos + Vector2(22, 0), Color("#d8a84e"), 5.0, true)
+	draw_circle(bell_pos + Vector2(0, -31), 8.0, Color("#f2d274"))
+	if boss_defeated:
+		draw_circle(bell_pos + Vector2(34, -53), 9.0, Color("#fff0a5"))
+		for sparkle in 5:
+			var angle := TAU * float(sparkle) / 5.0 + time_alive
+			draw_circle(bell_pos + Vector2(cos(angle), sin(angle)) * 37.0, 3.0, Color("#fff5c8"))
+
+
 func _draw_cloud(x: float, y: float) -> void:
 	draw_circle(Vector2(x, y), 25.0, Color("#fff9ef", 0.86))
 	draw_circle(Vector2(x + 28, y - 9), 33.0, Color("#fff9ef", 0.9))
@@ -1523,7 +1764,8 @@ func open_pause() -> void:
 		return
 	_clear_touch_input()
 	get_tree().paused = true
-	pause_overlay = _create_overlay("先休息一下", "草莓蛋糕村的旅程會在這裡等你。", [["繼續遊玩", resume_game], ["重新開始", restart_game], ["回到首頁", return_to_title]], false)
+	var pause_message := "棉花糖雲朵森林的旅程會在這裡等你。" if chapter_index == 2 else "草莓蛋糕村的旅程會在這裡等你。"
+	pause_overlay = _create_overlay("先休息一下", pause_message, [["繼續遊玩", resume_game], ["重新開始", restart_game], ["回到首頁", return_to_title]], false)
 
 
 func resume_game() -> void:
@@ -1540,6 +1782,7 @@ func restart_game() -> void:
 
 func return_to_title() -> void:
 	get_tree().paused = false
+	get_tree().set_meta("snackisle_chapter", 1)
 	get_tree().change_scene_to_file("res://scenes/title_screen.tscn")
 
 
@@ -1548,8 +1791,18 @@ func finish_level() -> void:
 		return
 	run_over = true
 	_clear_touch_input()
-	var result_text := _l10n("草莓噴泉回復平靜，怪盜喵嗚的果醬大計泡湯啦。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了草莓蛋糕村野餐！", {"count": "%02d" % star_candies})
-	result_overlay = _create_overlay("閥門找回來了！", result_text, [["再玩一次", restart_game], ["回到首頁", return_to_title]], true)
+	if chapter_index == 2:
+		var cloud_result := _l10n("月光蜂蜜鈴重新響起，棉花糖風暴平息了。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了雲朵森林冒險！", {"count": "%02d" % star_candies})
+		result_overlay = _create_overlay("月光蜂蜜鈴找回來了！", cloud_result, [["再玩第二章", restart_game], ["回到首頁", return_to_title]], true)
+	else:
+		var result_text := _l10n("草莓噴泉回復平靜，怪盜喵嗚的果醬大計泡湯啦。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了草莓蛋糕村野餐！", {"count": "%02d" % star_candies})
+		result_overlay = _create_overlay("閥門找回來了！", result_text, [["前往第二章", start_chapter_two], ["再玩第一章", restart_game], ["回到首頁", return_to_title]], true)
+
+
+func start_chapter_two() -> void:
+	get_tree().paused = false
+	get_tree().set_meta("snackisle_chapter", 2)
+	get_tree().reload_current_scene()
 
 
 func _create_overlay(heading: String, body_text: String, actions: Array, terminal: bool) -> CanvasLayer:
@@ -1587,8 +1840,9 @@ func _create_overlay(heading: String, body_text: String, actions: Array, termina
 	body.add_theme_font_size_override("font_size", 18)
 	body.add_theme_color_override("font_color", Color("#694c52"))
 	stack.add_child(body)
-	for action in actions:
-		var button := _make_button(_l10n(action[0]), 0, 52, terminal and _l10n(action[0]) == "再玩一次")
+	for index in actions.size():
+		var action: Array = actions[index]
+		var button := _make_button(_l10n(action[0]), 0, 52, terminal and index == 0)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(action[1])
 		stack.add_child(button)
