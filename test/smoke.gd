@@ -22,8 +22,10 @@ func _run() -> void:
 		await process_frame
 	var start_button: Button = title.find_child("StartAdventure", true, false)
 	var chapter_two_button: Button = title.find_child("StartChapterTwo", true, false)
+	var controls_hint: Label = title.find_child("ControlsHint", true, false)
 	_check(start_button != null and start_button.text == "開始冒險", "title screen presents the playable game entry")
 	_check(chapter_two_button != null and chapter_two_button.text == "體驗第二章｜雲朵森林", "title screen provides a localized Chapter Two entry")
+	_check(controls_hint != null and controls_hint.text.contains("觸控／手把"), "title explains the new gamepad-style touch controls")
 	_check(title.find_child("GameTitle", true, false) != null, "title card is present")
 	if start_button == null:
 		_finish()
@@ -43,6 +45,33 @@ func _run() -> void:
 	_check(game.health == 3 and game.hearts_view.health == 3, "three strawberry mochi hearts start full")
 	_check(game.dudu != null and game.pochacco != null, "both playable companions are spawned")
 	_check(game.active_is_dudu() and game.get_active_buddy() == game.dudu, "Dudu leads at the start")
+	for key in ["A", "B", "X", "Y", "L", "R"]:
+		var pad_button := game.touch_buttons.get(key) as Button
+		_check(pad_button != null, "touch pad includes %s button" % key)
+	_check(game.touch_buttons["A"].text == "A\n跳躍" and game.touch_buttons["B"].text == "B\n滾動", "Dudu touch labels show A jump and B roll")
+	_check(game.touch_buttons["X"].text == "X\n坐擊" and game.touch_buttons["R"].text == "R\n攻略", "Dudu touch labels show X ground pound and R guide")
+	_check(_has_joypad_button("jump", JOY_BUTTON_A), "physical gamepad A maps to jump")
+	game.touch_buttons["A"].button_down.emit()
+	_check(Input.is_action_pressed("jump"), "touch A presses the jump action")
+	game.touch_buttons["A"].button_up.emit()
+	_check(not Input.is_action_pressed("jump"), "releasing touch A releases the jump action")
+	_check(_has_joypad_button("attack", JOY_BUTTON_B) and not _has_joypad_button("attack", JOY_BUTTON_X), "physical gamepad B maps to attack instead of X")
+	_check(_has_joypad_button("ground_pound", JOY_BUTTON_X) and _has_joypad_button("sniff", JOY_BUTTON_X), "physical gamepad X maps to the character's special")
+	_check(_has_joypad_button("assemble", JOY_BUTTON_Y), "physical gamepad Y maps to gather hug")
+	_check(_has_joypad_button("switch_character", JOY_BUTTON_LEFT_SHOULDER), "physical gamepad L shoulder switches characters")
+	_check(_has_joypad_button("guide_or_peel", JOY_BUTTON_RIGHT_SHOULDER), "physical gamepad R shoulder opens Dudu guide or Pochacco peel")
+	var controller_b := InputEventJoypadButton.new()
+	controller_b.button_index = JOY_BUTTON_B
+	controller_b.pressed = true
+	game._unhandled_input(controller_b)
+	_check(not paused, "B attack does not trigger the shared ui_cancel pause mapping")
+	game.touch_buttons["R"].pressed.emit()
+	var guide_copy := ""
+	if game.pause_overlay != null:
+		for node in game.pause_overlay.find_children("*", "Label", true, false):
+			guide_copy += (node as Label).text + "\n"
+	_check(paused and guide_copy.contains("攻略說明") and guide_copy.contains("第一章"), "Dudu R opens a chapter strategy guide")
+	game.resume_game()
 	var joystick: Control = game.find_child("TouchJoystick", true, false)
 	_check(joystick != null and joystick.size.x >= 112.0, "a large virtual joystick is available for phone movement")
 	if joystick != null:
@@ -77,22 +106,25 @@ func _run() -> void:
 		jump_release.pressed = false
 		jump_release.position = drag_up.position
 		joystick.call("_gui_input", jump_release)
-		game.switch_character()
+	game.touch_buttons["L"].pressed.emit()
 	_check(game.active_is_pochacco() and game.get_active_buddy() == game.pochacco, "instant character switching makes Pochacco controllable")
-	game.switch_character()
+	_check(game.touch_buttons["B"].text == "B\n迴旋" and game.touch_buttons["X"].text == "X\n嗅嗅" and game.touch_buttons["R"].text == "R\n蕉皮", "Pochacco touch labels update B/X/R actions")
+	game.touch_buttons["L"].pressed.emit()
 	_check(game.active_is_dudu() and game.get_active_buddy() == game.dudu, "instant switching returns control to Dudu")
-	game.perform_attack(game.dudu)
+	game.touch_buttons["B"].pressed.emit()
 	_check(game.dudu.roll_time > 0.0, "Dudu roll ability starts")
 	var before_projectiles := game.get_child_count()
-	game.perform_attack(game.pochacco)
+	game.touch_buttons["L"].pressed.emit()
+	game.touch_buttons["B"].pressed.emit()
 	_check(game.get_child_count() > before_projectiles, "Pochacco throws a returning banana projectile")
+	game.touch_buttons["L"].pressed.emit()
 	game.pochacco.global_position = Vector2(1560.0, game.GROUND_Y - 27.0)
 	game.dudu.global_position = Vector2(1500.0, game.GROUND_Y - 27.0)
 	game.clues_visible = false
 	game.break_barrier(game.hidden_wall)
 	_check(is_instance_valid(game.hidden_wall), "hidden chocolate wall cannot be broken before sniffing it out")
 	game.switch_character()
-	game.detect_clues()
+	game.touch_buttons["X"].pressed.emit()
 	_check(game.clues_visible, "Pochacco sniff reveals hand-drawn footprints")
 	game.switch_character()
 	game.dudu.global_position = Vector2(1500.0, game.GROUND_Y - 27.0)
@@ -108,8 +140,8 @@ func _run() -> void:
 	game.dudu.velocity = Vector2.ZERO
 	for _frame in 3:
 		await physics_frame
-	game.request_gather()
-	_check(game.team_weight_activated and game.team_gate == null, "F gather hug activates the two-companion weight gate")
+	game.touch_buttons["Y"].pressed.emit()
+	_check(game.team_weight_activated and game.team_gate == null, "Y gather hug activates the two-companion weight gate")
 	game.switch_character()
 	game.pochacco.global_position = Vector2(game.plate_x, game.GROUND_Y - 27.0)
 	game.pochacco.velocity = Vector2.ZERO
@@ -153,7 +185,7 @@ func _run() -> void:
 	game.switch_character()
 	game.pochacco.global_position = Vector2(game.boss_x - 58.0, game.GROUND_Y - 27.0)
 	game.pochacco.facing = 1.0
-	game.drop_banana_peel(game.get_active_buddy())
+	game.touch_buttons["R"].pressed.emit()
 	for _frame in 3:
 		await physics_frame
 	_check(game.boss_exposed_time > 0.0 and not game.banana_peel_placed, "Pochacco's banana peel makes the cream boss slip and expose its core")
@@ -162,7 +194,7 @@ func _run() -> void:
 	game.dudu.velocity = Vector2.ZERO
 	for _frame in 2:
 		await physics_frame
-	game.dudu.start_ground_pound()
+	game.touch_buttons["X"].pressed.emit()
 	for _frame in 12:
 		await physics_frame
 	_check(game.boss_defeated, "Dudu's real ground-pound landing defeats the exposed cream boss core nonviolently")
@@ -192,6 +224,8 @@ func _run() -> void:
 		return
 	_check(cloud_game.chapter_label.text == "第二章｜棉花糖雲朵森林", "Chapter Two chapter title is localized in the HUD")
 	_check(cloud_game.is_cloud_updraft(1100.0) and not cloud_game.is_cloud_updraft(1800.0), "cloud updraft zones are active only in the new chapter")
+	cloud_game.touch_buttons["Y"].pressed.emit()
+	_check(cloud_game.team_hug_time > 0.0, "Y performs a visible gather hug in Chapter Two")
 	cloud_game.switch_character()
 	cloud_game.pochacco.global_position = Vector2(cloud_game.cloud_windmill_x - 280.0, cloud_game.GROUND_Y - 27.0)
 	cloud_game.pochacco.velocity = Vector2.ZERO
@@ -225,13 +259,20 @@ func _run() -> void:
 	cloud_game.dudu.velocity = Vector2.ZERO
 	for _frame in 2:
 		await physics_frame
-	cloud_game.dudu.start_ground_pound()
+	cloud_game.touch_buttons["X"].pressed.emit()
 	for _frame in 14:
 		await physics_frame
 	_check(cloud_game.boss_defeated, "Dudu's ground pound sends the cloud spirit away as a gentle sparkle burst")
 	cloud_game.finish_level()
 	_check(cloud_game.run_over and cloud_game.result_overlay != null, "recovering the moon-honey bell completes Chapter Two")
 	_finish()
+
+
+func _has_joypad_button(action_name: String, button_index: int) -> bool:
+	for event in InputMap.action_get_events(action_name):
+		if event is InputEventJoypadButton and event.button_index == button_index:
+			return true
+	return false
 
 
 func _check(condition: bool, message: String) -> void:

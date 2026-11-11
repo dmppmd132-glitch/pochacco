@@ -98,7 +98,7 @@ func _build_title() -> void:
 	stack.add_child(story)
 	var controls := Label.new()
 	controls.name = "ControlsHint"
-	controls.text = _l10n("←→／A D 移動　　Space／↑ 跳躍　　L／Tab 切換\n嘟嘟：J／X 滾滾衝刺；空中 K 屁屁坐擊\n帕恰狗：J／X 香蕉迴旋鏢；E 偵探嗅嗅；C 放香蕉皮\n手機：左側虛擬搖桿移動／上推跳躍，右側按鈕操作")
+	controls.text = _l10n("←→／A D 移動　Space／↑ 跳躍　L／Tab 切換\n觸控／手把：A 跳躍　B 滾動／迴旋　X 坐擊／嗅嗅　Y 抱抱\n肩鍵 L 切換；R 嘟嘟看攻略／帕恰狗放香蕉皮\n鍵盤快捷：J／X 攻擊、K 坐擊、E 嗅嗅、F 抱抱、R 攻略／香蕉皮、C 香蕉皮")
 	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.add_theme_font_size_override("font_size", 15)
@@ -205,7 +205,7 @@ func _layout_title() -> void:
 		story.add_theme_font_size_override("font_size", 14 if compact else 17)
 	var controls := title_panel.find_child("ControlsHint", true, false) as Label
 	if controls != null:
-		controls.text = _l10n("短版控制") if compact else _l10n("←→／A D 移動　　Space／↑ 跳躍　　L／Tab 切換\n嘟嘟：J／X 滾滾衝刺；空中 K 屁屁坐擊\n帕恰狗：J／X 香蕉迴旋鏢；E 偵探嗅嗅；C 放香蕉皮\n手機：左側虛擬搖桿移動／上推跳躍，右側按鈕操作")
+		controls.text = _l10n("短版控制") if compact else _l10n("←→／A D 移動　Space／↑ 跳躍　L／Tab 切換\n觸控／手把：A 跳躍　B 滾動／迴旋　X 坐擊／嗅嗅　Y 抱抱\n肩鍵 L 切換；R 嘟嘟看攻略／帕恰狗放香蕉皮\n鍵盤快捷：J／X 攻擊、K 坐擊、E 嗅嗅、F 抱抱、R 攻略／香蕉皮、C 香蕉皮")
 		controls.add_theme_font_size_override("font_size", 10 if compact else 15)
 	var install_hint := title_panel.find_child("InstallHint", true, false) as Label
 	if install_hint != null:

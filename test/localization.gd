@@ -8,8 +8,19 @@ const REQUIRED_COPY := [
 	"開始冒險",
 	"切換\n角色",
 	"偵探\n嗅嗅",
-		"屁屁\n坐擊",
-		"香蕉\n迴旋",
+	"屁屁\n坐擊",
+	"香蕉\n迴旋",
+	"A\n跳躍",
+		"B\n滾動",
+		"B\n迴旋",
+		"X\n坐擊",
+		"X\n嗅嗅",
+		"Y\n抱抱",
+		"L\n切換",
+		"R\n攻略",
+		"R\n蕉皮",
+		"攻略說明",
+		"←→／A D 移動　Space／↑ 跳躍　L／Tab 切換\n觸控／手把：A 跳躍　B 滾動／迴旋　X 坐擊／嗅嗅　Y 抱抱\n肩鍵 L 切換；R 嘟嘟看攻略／帕恰狗放香蕉皮\n鍵盤快捷：J／X 攻擊、K 坐擊、E 嗅嗅、F 抱抱、R 攻略／香蕉皮、C 香蕉皮",
 		"星星糖 {count}",
 		"小雞背包",
 		"食材 {count}",
@@ -54,7 +65,7 @@ func _run() -> void:
 			values.append(token.get_string(1))
 		values.sort()
 		_check(keys == values, "whole-message placeholder parity: " + key)
-	for character: String in "繁體中文嘟嘟帕恰狗點心島莓噴泉閥門果醬":
+	for character: String in "繁體中文嘟嘟帕恰狗點心島莓噴泉閥門果醬攻略手把抱蕉皮迴旋鏢":
 		_check(FONT.has_char(character.unicode_at(0)), "bundled font chain covers: " + character)
 	_check(FONT.fallbacks.size() >= 2, "font chain contains TC and SC fallback faces")
 	if FONT.fallbacks.size() >= 2:

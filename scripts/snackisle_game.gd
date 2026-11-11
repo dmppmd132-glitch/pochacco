@@ -485,7 +485,7 @@ class Buddy extends CharacterBody2D:
 					else:
 						game.show_toast("前方有一面巧克力牆；讓帕恰狗先嗅聞線索！")
 				elif collider.is_in_group("team_gate"):
-					game.show_toast("先讓嘟嘟站上大福按鈕，再按 F 集合！")
+					game.show_toast("先讓嘟嘟站上大福按鈕，再按 Y／F 集合！")
 				elif collider.is_in_group("bridge_cookie"):
 					if is_dudu and roll_time > 0.0 and game.plate_is_held():
 						game.break_barrier(collider)
@@ -556,7 +556,7 @@ class Buddy extends CharacterBody2D:
 		if not is_dudu:
 			return
 		if is_on_floor():
-			game.show_toast("先跳起來，再按 K 使出屁屁坐擊！")
+			game.show_toast("先跳起來，再按 X／K 使出屁屁坐擊！")
 			return
 		ground_pounding = true
 		velocity.y = 1050.0
@@ -600,6 +600,15 @@ func _ensure_input_actions() -> void:
 	_ensure_action_keys("assemble", [KEY_F])
 	_ensure_action_keys("drop_peel", [KEY_C])
 	_ensure_action_keys("pause_game", [KEY_ESCAPE])
+	_ensure_action_keys("guide_or_peel", [KEY_R])
+	_ensure_action_joypad_button("jump", JOY_BUTTON_A)
+	_ensure_action_joypad_button("attack", JOY_BUTTON_B)
+	_ensure_action_joypad_button("ground_pound", JOY_BUTTON_X)
+	_ensure_action_joypad_button("sniff", JOY_BUTTON_X)
+	_ensure_action_joypad_button("assemble", JOY_BUTTON_Y)
+	_ensure_action_joypad_button("switch_character", JOY_BUTTON_LEFT_SHOULDER)
+	_ensure_action_joypad_button("guide_or_peel", JOY_BUTTON_RIGHT_SHOULDER)
+	_ensure_action_joypad_button("pause_game", JOY_BUTTON_START)
 
 
 func _ensure_action_keys(action_name: String, keys: Array) -> void:
@@ -612,9 +621,20 @@ func _ensure_action_keys(action_name: String, keys: Array) -> void:
 				already_bound = true
 				break
 		if not already_bound:
-			var key_event := InputEventKey.new()
-			key_event.physical_keycode = int(key_code)
-			InputMap.action_add_event(action_name, key_event)
+				var key_event := InputEventKey.new()
+				key_event.physical_keycode = int(key_code)
+				InputMap.action_add_event(action_name, key_event)
+
+
+func _ensure_action_joypad_button(action_name: String, button_index: int) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name)
+	for event in InputMap.action_get_events(action_name):
+		if event is InputEventJoypadButton and event.button_index == button_index:
+			return
+	var joypad_event := InputEventJoypadButton.new()
+	joypad_event.button_index = button_index
+	InputMap.action_add_event(action_name, joypad_event)
 
 
 func _l10n(value: String, placeholders: Dictionary = {}) -> String:
@@ -927,6 +947,55 @@ func _make_button(text_value: String, width: float, height: float, primary: bool
 	return button
 
 
+func _make_touch_pad_button(key: String, text_value: String) -> Button:
+	var button := _make_button(text_value, 60, 60, false)
+	button.name = "Touch" + key
+	button.focus_mode = Control.FOCUS_NONE
+	button.set_meta("pad_key", key)
+	touch_buttons[key] = button
+	_style_touch_pad_button(button, key, 60.0, key == "L" or key == "R")
+	return button
+
+
+func _touch_pad_spacer(node_name: String) -> Control:
+	var spacer := Control.new()
+	spacer.name = node_name
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return spacer
+
+
+func _style_touch_pad_button(button: Button, key: String, cell: float, shoulder: bool = false) -> void:
+	var base_color := Color("#f1b7c3")
+	match key:
+		"A": base_color = Color("#9bd3a5")
+		"B": base_color = Color("#ee8791")
+		"X": base_color = Color("#8cc7e8")
+		"Y": base_color = Color("#f2cf68")
+	button.add_theme_color_override("font_color", Color("#62434b"))
+	button.add_theme_color_override("font_hover_color", Color("#70404b"))
+	button.add_theme_color_override("font_pressed_color", Color("#fffaf2"))
+	var corner_radius := 12 if shoulder else roundi(cell * 0.5)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var fill := base_color
+		if state == "hover":
+			fill = base_color.lightened(0.08)
+		elif state == "pressed":
+			fill = base_color.darkened(0.12)
+		var style := StyleBoxFlat.new()
+		style.bg_color = fill
+		style.border_color = base_color.darkened(0.28)
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(corner_radius)
+		style.content_margin_left = 2
+		style.content_margin_right = 2
+		style.content_margin_top = 2
+		style.content_margin_bottom = 2
+		style.shadow_color = Color(0.35, 0.15, 0.18, 0.18)
+		style.shadow_size = 2
+		style.shadow_offset = Vector2(0, 2)
+		button.add_theme_stylebox_override(state, style)
+
+
 func _build_touch_controls() -> void:
 	touch_controls = Control.new()
 	touch_controls.name = "PwaTouchControls"
@@ -950,33 +1019,30 @@ func _build_touch_controls() -> void:
 	grid.add_theme_constant_override("h_separation", 4)
 	grid.add_theme_constant_override("v_separation", 4)
 	touch_controls.add_child(grid)
-	var jump_button := _make_button("跳\n躍", 60, 58, true)
-	jump_button.name = "TouchJump"
-	_hold_action(jump_button, "jump")
-	grid.add_child(jump_button)
-	var attack_button := _make_button("滾\n滾", 60, 58, false)
-	attack_button.name = "TouchAttack"
-	attack_button.pressed.connect(_touch_attack)
-	touch_buttons["attack"] = attack_button
-	grid.add_child(attack_button)
-	var special_button := _make_button("屁屁\n坐擊", 60, 58, false)
-	special_button.name = "TouchSpecial"
-	special_button.pressed.connect(_touch_special)
-	touch_buttons["special"] = special_button
-	grid.add_child(special_button)
-	var sniff_button := _make_button("偵探\n嗅嗅", 60, 58, false)
-	sniff_button.name = "TouchSniff"
-	sniff_button.pressed.connect(detect_clues)
-	touch_buttons["sniff"] = sniff_button
-	grid.add_child(sniff_button)
-	var gather_button := _make_button("集合\n抱抱", 60, 58, false)
-	gather_button.name = "TouchGather"
-	gather_button.pressed.connect(request_gather)
-	grid.add_child(gather_button)
-	var switch_button := _make_button("切換\n角色", 60, 58, false)
-	switch_button.name = "TouchSwitch"
-	switch_button.pressed.connect(switch_character)
-	grid.add_child(switch_button)
+	var left_button := _make_touch_pad_button("L", "L\n切換")
+	left_button.pressed.connect(switch_character)
+	grid.add_child(left_button)
+	grid.add_child(_touch_pad_spacer("PadSpacerTop"))
+	var right_button := _make_touch_pad_button("R", "R\n攻略")
+	right_button.pressed.connect(_touch_r_action)
+	grid.add_child(right_button)
+	grid.add_child(_touch_pad_spacer("PadSpacerYLeft"))
+	var y_button := _make_touch_pad_button("Y", "Y\n抱抱")
+	y_button.pressed.connect(request_gather)
+	grid.add_child(y_button)
+	grid.add_child(_touch_pad_spacer("PadSpacerYRight"))
+	var x_button := _make_touch_pad_button("X", "X\n坐擊")
+	x_button.pressed.connect(_touch_special)
+	grid.add_child(x_button)
+	grid.add_child(_touch_pad_spacer("PadSpacerXB"))
+	var b_button := _make_touch_pad_button("B", "B\n滾動")
+	b_button.pressed.connect(_touch_attack)
+	grid.add_child(b_button)
+	grid.add_child(_touch_pad_spacer("PadSpacerABLeft"))
+	var a_button := _make_touch_pad_button("A", "A\n跳躍")
+	_hold_action(a_button, "jump")
+	grid.add_child(a_button)
+	grid.add_child(_touch_pad_spacer("PadSpacerABRight"))
 	_layout_hud()
 
 
@@ -1034,27 +1100,46 @@ func _layout_hud() -> void:
 		var grid := touch_controls.get_node("ActionGrid") as GridContainer
 		var cell := button_size if button_size <= 54.0 else 60.0
 		var grid_width := cell * 3.0 + 8.0
-		var grid_height := cell * 2.0 + 4.0
+		var grid_height := cell * 4.0 + 12.0
 		grid.offset_left = -grid_width - 12.0
 		grid.offset_top = -grid_height - 12.0
 		grid.offset_right = -12.0
 		grid.offset_bottom = -12.0
 		for child in grid.get_children():
+			if not child is Button:
+				continue
 			var button := child as Button
+			var key := str(button.get_meta("pad_key", ""))
 			button.custom_minimum_size = Vector2(cell, cell)
-			button.add_theme_font_size_override("font_size", 11 if cell <= 42.0 else 13)
+			button.add_theme_font_size_override("font_size", 10 if cell <= 42.0 else (12 if cell <= 54.0 else 14))
+			_style_touch_pad_button(button, key, cell, key == "L" or key == "R")
 		_refresh_touch_labels()
 
 
 func _refresh_touch_labels() -> void:
 	if touch_buttons.is_empty():
 		return
-	var attack: Button = touch_buttons["attack"]
-	var special: Button = touch_buttons["special"]
-	var sniff: Button = touch_buttons["sniff"]
-	attack.text = _l10n("滾\n滾") if active_is_dudu() else _l10n("香蕉\n迴旋")
-	special.text = _l10n("屁屁\n坐擊") if active_is_dudu() else _l10n("丟\n香蕉皮")
-	sniff.visible = not active_is_dudu()
+	var labels := {
+		"A": "A\n跳躍",
+		"B": "B\n滾動" if active_is_dudu() else "B\n迴旋",
+		"X": "X\n坐擊" if active_is_dudu() else "X\n嗅嗅",
+		"Y": "Y\n抱抱",
+		"L": "L\n切換",
+		"R": "R\n攻略" if active_is_dudu() else "R\n蕉皮",
+	}
+	var descriptions := {
+		"A": "A｜跳躍",
+		"B": "B｜嘟嘟滾滾衝刺" if active_is_dudu() else "B｜帕恰狗香蕉迴旋鏢",
+		"X": "X｜嘟嘟屁屁坐擊" if active_is_dudu() else "X｜帕恰狗偵探嗅嗅",
+		"Y": "Y｜集合抱抱",
+		"L": "L｜切換角色",
+		"R": "R｜嘟嘟開啟攻略說明" if active_is_dudu() else "R｜帕恰狗放香蕉皮",
+	}
+	for key in labels:
+		var button := touch_buttons[key] as Button
+		button.text = _l10n(labels[key])
+		button.tooltip_text = _l10n(descriptions[key])
+		button.accessibility_name = _l10n(descriptions[key])
 
 
 func _update_controlled_state() -> void:
@@ -1097,12 +1182,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("assemble"):
 		request_gather()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("pause_game") or event.is_action_pressed("ui_cancel"):
+	elif event.is_action_pressed("guide_or_peel"):
+		_touch_r_action()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("pause_game"):
 		if is_instance_valid(pause_overlay):
 			resume_game()
 		else:
 			open_pause()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel"):
+		if is_instance_valid(pause_overlay):
+			resume_game()
+			get_viewport().set_input_as_handled()
+		elif not event.is_action_pressed("attack"):
+			open_pause()
+			get_viewport().set_input_as_handled()
 
 
 func perform_attack(buddy: Buddy) -> void:
@@ -1124,16 +1219,37 @@ func _touch_attack() -> void:
 
 
 func _touch_special() -> void:
+	if run_over or is_instance_valid(pause_overlay):
+		return
 	var active = get_active_buddy()
 	if active_is_dudu():
 		active.start_ground_pound()
 	else:
-		drop_banana_peel(active)
+		detect_clues()
+
+
+func _touch_r_action() -> void:
+	if run_over or is_instance_valid(pause_overlay):
+		return
+	if active_is_dudu():
+		open_guide()
+	else:
+		drop_banana_peel(get_active_buddy())
+
+
+func open_guide() -> void:
+	if run_over or is_instance_valid(pause_overlay):
+		return
+	_clear_touch_input()
+	get_tree().paused = true
+	var controls := "A 跳躍；B 嘟嘟滾滾／帕恰狗香蕉迴旋鏢；X 嘟嘟屁屁坐擊／帕恰狗偵探嗅嗅；Y 集合抱抱；L 切換角色。R 是嘟嘟攻略、帕恰狗香蕉皮。"
+	var chapter_guide := "第一章：先嗅出巧克力牆腳印，再讓嘟嘟滾撞；果醬河由帕恰狗踩踏板、嘟嘟撞開橋頭；Boss 踩香蕉皮滑倒後再坐擊核心。" if chapter_index == 1 else "第二章：用迴旋鏢敲響風車鈴開雲門；帕恰狗踩住雲朵踏板，嘟嘟滾破橋閘；Boss 露出鈴心後再坐擊。"
+	pause_overlay = _create_overlay("攻略說明", controls + "\n\n" + chapter_guide, [["繼續遊玩", resume_game]], false)
 
 
 func detect_clues() -> void:
 	if active_is_dudu():
-		show_toast("切換帕恰狗，使用 E 偵探嗅嗅找線索！")
+		show_toast("切換帕恰狗，按 X／E 偵探嗅嗅找線索！")
 		return
 	if chapter_index == 2:
 		if absf(pochacco.global_position.x - cloud_windmill_x) <= 440.0:
@@ -1157,10 +1273,10 @@ func break_barrier(block: Node) -> void:
 	if not is_instance_valid(block):
 		return
 	if block.is_in_group("hidden_wall") and not clues_visible:
-		show_toast("先切換帕恰狗使用 E 偵探嗅嗅，找出牆上的腳印！")
+		show_toast("先切換帕恰狗按 X／E 偵探嗅嗅，找出牆上的腳印！")
 		return
 	if block.is_in_group("team_gate") and not team_weight_activated:
-		show_toast("這個大福機關要兩個夥伴一起壓！站在按鈕上按 F。")
+		show_toast("這個大福機關要兩個夥伴一起壓！嘟嘟站上按鈕後按 Y／F。")
 		return
 	if block.is_in_group("bridge_cookie") and not plate_is_held():
 		show_toast("帕恰狗必須踩住雲朵踏板，浮雲橋才會降下！" if chapter_index == 2 else "帕恰狗必須踩住果醬河控制踏板，橋才會降下！")
@@ -1190,33 +1306,40 @@ func break_barrier(block: Node) -> void:
 
 
 func request_gather() -> void:
-	if chapter_index == 2:
-		show_toast("第二章的合作機關由帕恰狗踩住雲朵踏板，再切換嘟嘟滾破橋閘！")
+	if run_over:
 		return
-	if not active_is_dudu():
-		show_toast("先切回嘟嘟，站在粉紅大福按鈕上再按 F 集合！")
+	if chapter_index == 1 and active_is_dudu() and absf(dudu.global_position.x - 860.0) <= 100.0 and dudu.is_on_floor():
+		if team_weight_activated:
+			show_toast("雙重重量機關已經打開囉！")
+			return
+		team_weight_activated = true
+		team_hug_time = 0.7
+		pochacco.global_position = dudu.global_position + Vector2(-34, -14)
+		pochacco.velocity = Vector2(0, -185.0)
+		pochacco.squash_time = 0.45
+		if is_instance_valid(team_gate):
+			break_barrier(team_gate)
+		else:
+			show_toast("嘟嘟和帕恰狗熊抱！雙重重量壓下開關！")
+		queue_redraw()
 		return
-	if absf(dudu.global_position.x - 860.0) > 100.0 or not dudu.is_on_floor():
-		show_toast("讓嘟嘟站上第一個粉紅大福按鈕，再按 F 集合！")
+	var leader = get_active_buddy()
+	var partner = pochacco if active_is_dudu() else dudu
+	if not is_instance_valid(leader) or not is_instance_valid(partner):
 		return
-	if team_weight_activated:
-		show_toast("雙重重量機關已經打開囉！")
-		return
-	team_weight_activated = true
+	partner.global_position = leader.global_position + Vector2(-leader.facing * 34.0, -14.0)
+	partner.velocity = Vector2(0, -185.0)
+	partner.squash_time = 0.45
+	leader.squash_time = 0.35
 	team_hug_time = 0.7
-	pochacco.global_position = dudu.global_position + Vector2(-34, -14)
-	pochacco.velocity = Vector2(0, -185)
-	pochacco.squash_time = 0.45
-	if is_instance_valid(team_gate):
-		break_barrier(team_gate)
-	else:
-		show_toast("嘟嘟和帕恰狗熊抱！雙重重量壓下開關！")
+	var hug_message := "集合抱抱！切回嘟嘟站上大福按鈕，再按 Y／F 啟動雙重重量。" if chapter_index == 1 and not active_is_dudu() else "嘟嘟和帕恰狗集合抱抱！"
+	show_toast(hug_message)
 	queue_redraw()
 
 
 func on_jump(buddy: Buddy) -> void:
 	if buddy.is_dudu:
-		show_toast("嘟嘟跳得高高的！空中按 K 屁屁坐擊。")
+		show_toast("嘟嘟跳得高高的！空中按 X／K 屁屁坐擊。")
 
 
 func on_trampoline(buddy: Buddy) -> void:
@@ -1371,9 +1494,9 @@ func _update_objective() -> void:
 	elif clues_visible:
 		objective_label.text = _l10n("照著手繪腳印：切回嘟嘟，滾滾衝刺撞開巧克力牆。")
 	elif team_weight_activated:
-		objective_label.text = _l10n("用帕恰狗 E 偵探嗅嗅，尋找巧克力牆後的腳印。")
+		objective_label.text = _l10n("用帕恰狗 X／E 偵探嗅嗅，尋找巧克力牆後的腳印。")
 	else:
-		objective_label.text = _l10n("用嘟嘟跳上戚風蛋糕；站上大福按鈕按 F 集合。")
+		objective_label.text = _l10n("用嘟嘟跳上戚風蛋糕；站上大福按鈕按 Y／F 集合。")
 
 
 func damage_source(message: String, source_position: Vector2) -> void:
