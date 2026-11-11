@@ -2,6 +2,35 @@ extends Node2D
 
 const DUDU_TEXTURE: Texture2D = preload("res://assets/snackisle/dudu-512.png")
 const POCHACCO_TEXTURE: Texture2D = preload("res://assets/snackisle/pochacco-512.png")
+const DUDU_IDLE_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_idle.png")
+const DUDU_RUN_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_run.png")
+const DUDU_JUMP_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_jump.png")
+const DUDU_ROLL_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_roll.png")
+const DUDU_HURT_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_hurt.png")
+const POCHACCO_IDLE_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/pochacco_idle.png")
+const POCHACCO_RUN_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/pochacco_run.png")
+const POCHACCO_JUMP_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/pochacco_jump.png")
+const POCHACCO_ATTACK_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/pochacco_boomerang.png")
+const POCHACCO_HURT_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/pochacco_hurt.png")
+const DUDU_IDLE_FRAMES: Array[Texture2D] = [DUDU_IDLE_POSE, preload("res://assets/snackisle/animation_p0/dudu_idle_01.png"), preload("res://assets/snackisle/animation_p0/dudu_idle_02.png"), preload("res://assets/snackisle/animation_p0/dudu_idle_03.png")]
+const DUDU_RUN_FRAMES: Array[Texture2D] = [DUDU_RUN_POSE, preload("res://assets/snackisle/animation_p0/dudu_run_01.png"), preload("res://assets/snackisle/animation_p0/dudu_run_02.png"), preload("res://assets/snackisle/animation_p0/dudu_run_03.png")]
+const POCHACCO_IDLE_FRAMES: Array[Texture2D] = [POCHACCO_IDLE_POSE, preload("res://assets/snackisle/animation_p0/pochacco_idle_01.png"), preload("res://assets/snackisle/animation_p0/pochacco_idle_02.png"), preload("res://assets/snackisle/animation_p0/pochacco_idle_03.png")]
+const POCHACCO_RUN_FRAMES: Array[Texture2D] = [POCHACCO_RUN_POSE, preload("res://assets/snackisle/animation_p0/pochacco_run_01.png"), preload("res://assets/snackisle/animation_p0/pochacco_run_02.png"), preload("res://assets/snackisle/animation_p0/pochacco_run_03.png")]
+const DUDU_POUND_DROP_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_pound_01.png")
+const DUDU_POUND_IMPACT_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_pound_02.png")
+const DUDU_POUND_RECOVER_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_pound_03.png")
+const DUDU_JUMP_FRAMES: Array[Texture2D] = [DUDU_JUMP_POSE]
+const DUDU_ROLL_FRAMES: Array[Texture2D] = [DUDU_ROLL_POSE]
+const DUDU_HURT_FRAMES: Array[Texture2D] = [DUDU_HURT_POSE]
+const DUDU_POUND_DROP_FRAMES: Array[Texture2D] = [DUDU_POUND_DROP_POSE]
+const DUDU_POUND_HIT_FRAMES: Array[Texture2D] = [DUDU_POUND_IMPACT_POSE, DUDU_POUND_RECOVER_POSE]
+const DUDU_VICTORY_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/dudu_victory.png")
+const POCHACCO_VICTORY_POSE: Texture2D = preload("res://assets/snackisle/animation_p0/pochacco_victory.png")
+const DUDU_VICTORY_FRAMES: Array[Texture2D] = [DUDU_VICTORY_POSE]
+const POCHACCO_JUMP_FRAMES: Array[Texture2D] = [POCHACCO_JUMP_POSE]
+const POCHACCO_ATTACK_FRAMES: Array[Texture2D] = [POCHACCO_ATTACK_POSE]
+const POCHACCO_HURT_FRAMES: Array[Texture2D] = [POCHACCO_HURT_POSE]
+const POCHACCO_VICTORY_FRAMES: Array[Texture2D] = [POCHACCO_VICTORY_POSE]
 const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
 const WORLD_WIDTH := 5200.0
 const GROUND_Y := 620.0
@@ -380,6 +409,12 @@ class Buddy extends CharacterBody2D:
 	var sprite: Sprite2D
 	var anim_time := 0.0
 	var roll_time := 0.0
+	var hurt_pose_time := 0.0
+	var action_pose_time := 0.0
+	var pound_recovery_time := 0.0
+	var pose_time := 0.0
+	var active_pose := ""
+	var victory_pose := false
 	var ground_pounding := false
 	var landing_lock := 0.0
 	var squash_time := 0.0
@@ -465,9 +500,11 @@ class Buddy extends CharacterBody2D:
 				if collider is Node and collider.is_in_group("trampoline"):
 					landed_on_trampoline = true
 				break
-			if ground_pounding:
-				ground_pounding = false
-				game.resolve_ground_pound(self)
+				if ground_pounding:
+					ground_pounding = false
+					pound_recovery_time = 0.28
+					active_pose = ""
+					game.resolve_ground_pound(self)
 			if landed_on_trampoline and bounce_guard <= 0.0:
 				velocity.y = -690.0
 				bounce_guard = 0.3
@@ -499,6 +536,8 @@ class Buddy extends CharacterBody2D:
 			velocity.x = move_toward(velocity.x, direction * speed, 800.0 * delta)
 		if is_on_floor() and ground_pounding:
 			ground_pounding = false
+			pound_recovery_time = 0.28
+			active_pose = ""
 		game.on_buddy_moved(self)
 		queue_redraw()
 
@@ -508,15 +547,49 @@ class Buddy extends CharacterBody2D:
 		var moving := absf(velocity.x) > 38.0
 		sprite.flip_h = facing < 0.0
 		squash_time = maxf(0.0, squash_time - delta)
+		hurt_pose_time = maxf(0.0, hurt_pose_time - delta)
+		action_pose_time = maxf(0.0, action_pose_time - delta)
+		pound_recovery_time = maxf(0.0, pound_recovery_time - delta)
+		var pose := "idle"
+		if victory_pose:
+			pose = "victory"
+		elif hurt_pose_time > 0.0:
+			pose = "hurt"
+		elif is_dudu and roll_time > 0.0:
+			pose = "roll"
+		elif action_pose_time > 0.0:
+			pose = "attack"
+		elif is_dudu and ground_pounding:
+			pose = "pound_drop"
+		elif is_dudu and pound_recovery_time > 0.0:
+			pose = "pound_hit"
+		elif not is_on_floor():
+			pose = "jump"
+		elif moving:
+			pose = "run"
+		if pose != active_pose:
+			active_pose = pose
+			pose_time = 0.0
+		else:
+			pose_time += delta
+		var frames := game.pose_frames_for(is_dudu, pose)
+		var frame_index := int(floor(pose_time * game.pose_fps_for(pose)))
+		if pose == "pound_hit":
+			frame_index = mini(frame_index, frames.size() - 1)
+		else:
+			frame_index %= frames.size()
+		sprite.texture = frames[frame_index]
 		var squash := Vector2.ONE
-		if roll_time > 0.0 and is_dudu:
+		if victory_pose:
+			sprite.rotation = 0.0
+		elif roll_time > 0.0 and is_dudu:
 			squash = Vector2(1.24, 0.72)
 			sprite.rotation += facing * delta * 15.0
 		else:
 			sprite.rotation = sin(anim_time * 7.0) * (0.025 if moving else 0.012)
 			if is_on_floor() and moving:
 				squash.y += sin(anim_time * 17.0) * 0.035
-		if squash_time > 0.0:
+		if squash_time > 0.0 and not victory_pose:
 			squash *= Vector2(1.13, 0.74)
 		sprite.scale = Vector2.ONE * 0.17 * squash
 		queue_redraw()
@@ -577,6 +650,7 @@ class Buddy extends CharacterBody2D:
 
 	func receive_soft_hit() -> void:
 		squash_time = 0.48
+		hurt_pose_time = 0.34
 		velocity.x = -facing * 200.0
 		velocity.y = -250.0
 
@@ -647,6 +721,35 @@ func _chapter_title() -> String:
 
 func texture_for(is_dudu: bool) -> Texture2D:
 	return DUDU_TEXTURE if is_dudu else POCHACCO_TEXTURE
+
+func pose_frames_for(is_dudu: bool, pose: String) -> Array[Texture2D]:
+	if is_dudu:
+		match pose:
+			"idle": return DUDU_IDLE_FRAMES
+			"run": return DUDU_RUN_FRAMES
+			"jump": return DUDU_JUMP_FRAMES
+			"roll": return DUDU_ROLL_FRAMES
+			"hurt": return DUDU_HURT_FRAMES
+			"pound_drop": return DUDU_POUND_DROP_FRAMES
+			"pound_hit": return DUDU_POUND_HIT_FRAMES
+			"victory": return DUDU_VICTORY_FRAMES
+	else:
+		match pose:
+			"idle": return POCHACCO_IDLE_FRAMES
+			"run": return POCHACCO_RUN_FRAMES
+			"jump": return POCHACCO_JUMP_FRAMES
+			"attack": return POCHACCO_ATTACK_FRAMES
+			"hurt": return POCHACCO_HURT_FRAMES
+			"victory": return POCHACCO_VICTORY_FRAMES
+	return DUDU_IDLE_FRAMES if is_dudu else POCHACCO_IDLE_FRAMES
+
+
+func pose_fps_for(pose: String) -> float:
+	match pose:
+		"idle": return 5.0
+		"run": return 10.0
+		"pound_hit": return 8.0
+	return 1.0
 
 
 func build_world() -> void:
@@ -1205,6 +1308,7 @@ func perform_attack(buddy: Buddy) -> void:
 		buddy.begin_roll()
 		show_toast("嘟嘟滾滾衝刺！撞開雲餅橋閘吧！" if chapter_index == 2 else "嘟嘟滾滾衝刺！撞碎巧克力和夾心餅乾吧！")
 	else:
+		buddy.action_pose_time = 0.28
 		var banana := BananaBoomerang.new()
 		banana.game = self
 		banana.direction = buddy.facing
@@ -1913,6 +2017,10 @@ func finish_level() -> void:
 	if run_over:
 		return
 	run_over = true
+	if is_instance_valid(dudu):
+		dudu.victory_pose = true
+	if is_instance_valid(pochacco):
+		pochacco.victory_pose = true
 	_clear_touch_input()
 	if chapter_index == 2:
 		var cloud_result := _l10n("月光蜂蜜鈴重新響起，棉花糖風暴平息了。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了雲朵森林冒險！", {"count": "%02d" % star_candies})

@@ -194,6 +194,805 @@
       "used": false,
       "usedBy": []
     },
+    "assets/snackisle/animation_p0/dudu_idle_01.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:8cf5cba178b2e0643c3f4233d2d02d9b823784b31ee110ef3680158420ed2e70",
+      "shipped": true,
+      "size": 273406,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_idle_02.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:c81e42f1d111864ccfef5d4fac4b0db849621ee963e8715f8aaa226c412e8434",
+      "shipped": true,
+      "size": 274930,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_idle_03.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:5a1392d334be436841362f31f898ccc4af3750ea3880247f8811db545758ac09",
+      "shipped": true,
+      "size": 271959,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_pound_01.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_jump.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_jump.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:580b408f38dd764baa9a160b20d824da4d41bc43f668551162bca1c77a194194",
+      "shipped": true,
+      "size": 262812,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_pound_02.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_jump.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_jump.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:2a8e17649655ed0c7d5135163a756253a5f0674c20dd2f207cdd6301ad8cb3ea",
+      "shipped": true,
+      "size": 283263,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_pound_03.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_jump.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_jump.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:d5fda5cfe08d3a6740cbbc4f2ca4d507343029f73c47db4cadfb485d0fbd7086",
+      "shipped": true,
+      "size": 281255,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_run_01.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_run.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_run.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:196a0859993eb36c1e6c4b0f35cc861b4fcafc24a0ba27737ebbc80d84763385",
+      "shipped": true,
+      "size": 282417,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_run_02.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_run.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_run.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:db7b9f109686f3b779495a1ea6b3b74cb09c2b6880328d2c27cd0eb6e5e18a79",
+      "shipped": true,
+      "size": 277268,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_run_03.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_run.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_run.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:6abf5fcea402803e26a22e1c62add0bea067eb4b732fcf8fd465e0817e348e75",
+      "shipped": true,
+      "size": 275177,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/dudu_victory.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/dudu_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:bff850e7ca62fbe2afbd2adb48822204fb59762ce8ccb913e9d194fbdf07902d",
+      "shipped": true,
+      "size": 278475,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_idle_01.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:2c2625f4b786f09d6100f378fabc62185d3ee3f27ea8fe60a7bf98b36bfca572",
+      "shipped": true,
+      "size": 243606,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_idle_02.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:8ff572560bff45d26744038a30cc5c2e7c0602884bb94779888836b57f2e3046",
+      "shipped": true,
+      "size": 244516,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_idle_03.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:eacdbe084f82009ce90e0d56f323e72e55a7e534245b531c175d773c16b1b6eb",
+      "shipped": true,
+      "size": 242803,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_run_01.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_run.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_run.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:349f86acf17f76f45f8d0383bb97944bf258e322bc7f2f5ca1180ba6556acf1a",
+      "shipped": true,
+      "size": 266484,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_run_02.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_run.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_run.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:2ebea43f5233b67022d1fbf3111eb0ceb6a8441937e946d03376ab90aa86b4fc",
+      "shipped": true,
+      "size": 276338,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_run_03.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_run.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_run.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:cdc91e00c57a557b7cd390560b3b82085a781f33bb59b7d873a110dcb245b0e2",
+      "shipped": true,
+      "size": 270204,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
+    "assets/snackisle/animation_p0/pochacco_victory.png": {
+      "declaredUseEvidence": [
+        "scripts/snackisle_game.gd"
+      ],
+      "generator": {
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "output": "1920x1920 RGBA PNG"
+      },
+      "inputs": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "license": {
+        "status": "review_required",
+        "note": "AI-generated using project mascot reference art; any third-party character/IP authorization is outside this provenance record."
+      },
+      "origin": "ai",
+      "referenceEvidence": [
+        "assets/snackisle/animation_p0/pochacco_idle.png"
+      ],
+      "regions": [],
+      "sha256": "sha256:4e9f82960ab84aa87f0a99898c88402f04a7ed12d2b9761c43c3d2f2b7df617a",
+      "shipped": true,
+      "size": 247803,
+      "source": {
+        "type": "AI-generated character animation frame",
+        "provider": "Manus image generation",
+        "model": "gpt-image-2.5",
+        "prompt_evidence": "docs/P0_CHARACTER_ANIMATION.md"
+      },
+      "status": "present",
+      "transformations": [
+        "Alpha-bounds crop (alpha > 64) with 28 px padding",
+        "Lanczos downscale to fit within 452x466 px",
+        "Centered on a transparent 512x512 RGBA canvas with common baseline y=495"
+      ],
+      "useEvidence": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "used": true,
+      "usedBy": [
+        "scripts/snackisle_game.gd",
+        "test/animation_p0.gd"
+      ],
+      "versions": {}
+    },
     "assets/snackisle/dudu-512.png": {
       "declaredUseEvidence": [],
       "generator": {},
@@ -1335,9 +2134,9 @@
   "summary": {
     "ancestry": {
       "ai": {
-        "retained": 0,
-        "shipped": 0,
-        "used": 0
+        "retained": 17,
+        "shipped": 17,
+        "used": 17
       },
       "catalog": {
         "retained": 0,
@@ -1362,15 +2161,15 @@
     },
     "files": {
       "downloaded": 0,
-      "retained": 55,
-      "shipped": 47,
-      "used": 19
+      "retained": 72,
+      "shipped": 64,
+      "used": 36
     },
     "origins": {
       "ai": {
-        "retained": 0,
-        "shipped": 0,
-        "used": 0
+        "retained": 17,
+        "shipped": 17,
+        "used": 17
       },
       "catalog": {
         "retained": 0,
