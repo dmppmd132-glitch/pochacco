@@ -35,7 +35,16 @@ const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
 const WORLD_WIDTH := 5200.0
 const GROUND_Y := 620.0
 const GRAVITY := 1450.0
-const JUMP_SPEED := 560.0
+const DUDU_JUMP_SPEED := 560.0
+const POCHACCO_JUMP_SPEED := 620.0
+const DUDU_MOVE_SPEED := 235.0
+const POCHACCO_MOVE_SPEED := 360.0
+const DUDU_GROUND_ACCELERATION := 1400.0
+const POCHACCO_GROUND_ACCELERATION := 1800.0
+const DUDU_GROUND_FRICTION := 1800.0
+const POCHACCO_GROUND_FRICTION := 2200.0
+const DUDU_AIR_ACCELERATION := 800.0
+const POCHACCO_AIR_ACCELERATION := 1050.0
 
 var chapter_index := 1
 var cloud_windmill_active := false
@@ -423,6 +432,21 @@ class Buddy extends CharacterBody2D:
 	var bounce_guard := 0.0
 	var floor_probe: RayCast2D
 
+	func jump_speed() -> float:
+		return game.POCHACCO_JUMP_SPEED if not is_dudu else game.DUDU_JUMP_SPEED
+
+	func move_speed() -> float:
+		return game.POCHACCO_MOVE_SPEED if not is_dudu else game.DUDU_MOVE_SPEED
+
+	func ground_acceleration() -> float:
+		return game.POCHACCO_GROUND_ACCELERATION if not is_dudu else game.DUDU_GROUND_ACCELERATION
+
+	func ground_friction() -> float:
+		return game.POCHACCO_GROUND_FRICTION if not is_dudu else game.DUDU_GROUND_FRICTION
+
+	func air_acceleration() -> float:
+		return game.POCHACCO_AIR_ACCELERATION if not is_dudu else game.DUDU_AIR_ACCELERATION
+
 	func _ready() -> void:
 		add_to_group("snackisle_buddy")
 		collision_layer = 2
@@ -464,7 +488,7 @@ class Buddy extends CharacterBody2D:
 				velocity.y -= 430.0 * delta
 		var touch_jump: bool = game.consume_touch_jump() if controlled else false
 		if controlled and (Input.is_action_just_pressed("jump") or touch_jump) and on_floor_before and landing_lock <= 0.0:
-			velocity.y = -game.JUMP_SPEED
+			velocity.y = -jump_speed()
 			game.on_jump(self)
 		if controlled and is_dudu and Input.is_action_just_pressed("ground_pound"):
 			start_ground_pound()
@@ -474,7 +498,7 @@ class Buddy extends CharacterBody2D:
 			game.detect_clues()
 		if controlled and not is_dudu and Input.is_action_just_pressed("drop_peel"):
 			game.drop_banana_peel(self)
-		var speed := 330.0 if not is_dudu else 235.0
+		var speed := move_speed()
 		if roll_time > 0.0 and is_dudu:
 			speed = 630.0
 		elif not controlled and is_dudu and game.active_is_pochacco() and game.follow_gap(self) > 320.0:
@@ -483,9 +507,9 @@ class Buddy extends CharacterBody2D:
 		if game.is_mousse(global_position.x):
 			speed *= 0.48
 		if absf(direction) > 0.05:
-			velocity.x = move_toward(velocity.x, direction * speed, 1400.0 * delta)
+			velocity.x = move_toward(velocity.x, direction * speed, ground_acceleration() * delta)
 		else:
-			velocity.x = move_toward(velocity.x, 0.0, 1800.0 * delta)
+			velocity.x = move_toward(velocity.x, 0.0, ground_friction() * delta)
 		var incoming_y := velocity.y
 		move_and_slide()
 		if global_position.y > 820.0:
@@ -533,7 +557,7 @@ class Buddy extends CharacterBody2D:
 				elif collider.is_in_group("boss_gate") and not game.boss_defeated:
 					game.show_toast("用帕恰狗的香蕉迴旋鏢敲暈雲朵風靈，再讓嘟嘟屁屁坐擊！" if game.chapter_index == 2 else "先讓奶油怪踩上香蕉皮，再用嘟嘟屁屁坐擊！")
 		if absf(velocity.x) > 0.1 and not is_on_floor():
-			velocity.x = move_toward(velocity.x, direction * speed, 800.0 * delta)
+			velocity.x = move_toward(velocity.x, direction * speed, air_acceleration() * delta)
 		if is_on_floor() and ground_pounding:
 			ground_pounding = false
 			pound_recovery_time = 0.28
@@ -618,10 +642,10 @@ class Buddy extends CharacterBody2D:
 			floor_probe.force_raycast_update()
 			var floor_exists := floor_probe.is_colliding()
 			if not floor_exists:
-				velocity.y = -game.JUMP_SPEED * 0.9
+				velocity.y = -jump_speed() * 0.9
 				game.on_jump(self)
 			elif leader.global_position.y < global_position.y - 48.0:
-				velocity.y = -game.JUMP_SPEED * 0.92
+				velocity.y = -jump_speed() * 0.92
 				game.on_jump(self)
 		return direction
 
