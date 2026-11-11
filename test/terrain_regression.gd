@@ -18,7 +18,11 @@ func _run() -> void:
 	for enemy in get_nodes_in_group("enemy"):
 		enemy.queue_free()
 	await process_frame
-	var player = game.player
+	var player = game.dudu
+	if player == null:
+		_check(false, "Dudu player node exists for terrain regression")
+		quit(1)
+		return
 	player.set_physics_process(false)
 	game.set_process(false)
 	var player_shape: CapsuleShape2D = player.get_child(0).shape
@@ -64,19 +68,18 @@ func _run() -> void:
 		await process_frame
 		await process_frame
 		game.camera.position_smoothing_enabled = false
-		for point in [Vector2(160, 540), Vector2(2130, 366), Vector2(3160, 270), Vector2(7560, 540)]:
+		for point in [Vector2(160, 540), Vector2(2130, 366), Vector2(3160, 270), Vector2(game.WORLD_WIDTH - 100.0, 540)]:
 			player.position = point
 			game.camera.force_update_scroll()
 			for i in 4:
 				await process_frame
-			var sky: Sprite2D = game.get_node("WorldArt").layer_sprites[0]
-			var screen_rect := sky.get_global_transform_with_canvas() * sky.get_rect()
-			var height := root.get_visible_rect().size.y
-			_check(screen_rect.position.y <= 0.5 and screen_rect.end.y >= height - 0.5, "sky leaves a screen-space gap after camera move/resize")
+			var screen_rect: Rect2 = game.get_global_transform_with_canvas() * game.WORLD_BACKGROUND_RECT
+			var viewport_rect := root.get_visible_rect()
+			_check(screen_rect.position.x <= 0.5 and screen_rect.end.x >= viewport_rect.end.x - 0.5 and screen_rect.position.y <= 0.5 and screen_rect.end.y >= viewport_rect.end.y - 0.5, "background leaves a screen-space gap after camera move/resize")
 	game.queue_free()
 	await process_frame
 	if not failed:
-		print("[TERRAIN_PASS] box clearance, bidirectional passage, stable colliders and screen-space sky coverage")
+		print("[TERRAIN_PASS] box clearance, bidirectional passage, stable colliders and screen-space background coverage")
 	root.get_node("GameAudio").stop_game()
 	OS.delay_msec(180)
 	await process_frame

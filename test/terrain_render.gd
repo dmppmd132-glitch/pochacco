@@ -21,8 +21,8 @@ func _run() -> void:
 	root.add_child(game)
 	await process_frame
 	game.set_process(false)
-	game.player.set_physics_process(false)
-	game.player.collision_layer = 0
+	game.dudu.set_physics_process(false)
+	game.dudu.collision_layer = 0
 	game.camera.position_smoothing_enabled = false
 	for sample in [
 		{"name": "square", "size": Vector2i(720, 720), "position": Vector2(2130, 366)},
@@ -34,8 +34,7 @@ func _run() -> void:
 	]:
 		root.size = sample.size
 		game.camera.zoom = Vector2.ONE * float(sample.get("zoom", 1.0))
-		game.update_camera_bounds()
-		game.player.position = sample.position
+		game.dudu.position = sample.position
 		for i in 8:
 			await process_frame
 		game.camera.force_update_scroll()

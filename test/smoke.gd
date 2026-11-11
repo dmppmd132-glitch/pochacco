@@ -209,6 +209,9 @@ func _run() -> void:
 			break
 	Input.action_release("move_right")
 	_check(game.run_over and game.result_overlay != null, "walking to the recovered strawberry fountain valve opens the chapter result")
+	if game.result_overlay == null:
+		_finish()
+		return
 	var has_chapter_two_button := false
 	for node in game.result_overlay.find_children("*", "Button", true, false):
 		if (node as Button).text == "前往第二章":

@@ -28,6 +28,10 @@ iPhone 請以 Safari 開啟網址，按「分享」→「加入主畫面」，�
 
 更新遊戲後，先執行 `npm run build` 產生 `dist/standalone/`，再執行 `npm run pages:sync` 更新 `github-pages/`，提交並推送到 `main` 後即可觸發 Pages 部署。同步腳本會排除本機 build fingerprint，並確認 PWA 包含 WASM/PCK 且沒有 Manus Storage 絕對路徑。
 
+### 本機 Godot runtime 測試
+
+部分模板字型與音效來源檔依 `.gitignore` 規則不納入 Git；在全新 clone 執行 Godot 前，先執行 `npm run assets:restore`。此命令只還原 `assets.lock.json` 中標記為使用中的字型與音效，並逐檔核對大小及 SHA-256；媒體本體仍保持 ignored，不會被加入 Git。首次還原後先執行 `godot --headless --editor --path . --quit` 建立 Godot 匯入快取，再執行各項 runtime 測試。`npm run assets:restore -- --check` 可離線確認本機檔案是否齊全且符合 lock。
+
 ## 注意事項
 
 本 repo 與 Pages 網站均為公開。請勿加入密鑰、個人資料或未授權素材。角色及品牌相關素材依專案權利聲明使用；Godot 匯出檔內含第三方元件，授權資訊見 `github-pages/THIRD_PARTY_NOTICES.txt` 與 `github-pages/open-source-licenses.html`。

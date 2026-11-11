@@ -33,6 +33,7 @@ const POCHACCO_HURT_FRAMES: Array[Texture2D] = [POCHACCO_HURT_POSE]
 const POCHACCO_VICTORY_FRAMES: Array[Texture2D] = [POCHACCO_VICTORY_POSE]
 const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
 const WORLD_WIDTH := 5200.0
+const WORLD_BACKGROUND_RECT := Rect2(-2048.0, -2048.0, WORLD_WIDTH + 4096.0, 4096.0)
 const GROUND_Y := 620.0
 const GRAVITY := 1450.0
 const JUMP_SPEED := 560.0
@@ -499,12 +500,12 @@ class Buddy extends CharacterBody2D:
 				var collider: Object = hit.get_collider()
 				if collider is Node and collider.is_in_group("trampoline"):
 					landed_on_trampoline = true
-				break
-				if ground_pounding:
-					ground_pounding = false
-					pound_recovery_time = 0.28
-					active_pose = ""
-					game.resolve_ground_pound(self)
+					break
+			if ground_pounding:
+				ground_pounding = false
+				pound_recovery_time = 0.28
+				active_pose = ""
+				game.resolve_ground_pound(self)
 			if landed_on_trampoline and bounce_guard <= 0.0:
 				velocity.y = -690.0
 				bounce_guard = 0.3
@@ -563,7 +564,7 @@ class Buddy extends CharacterBody2D:
 			pose = "pound_drop"
 		elif is_dudu and pound_recovery_time > 0.0:
 			pose = "pound_hit"
-		elif not is_on_floor():
+		elif not is_on_floor() or velocity.y < -1.0:
 			pose = "jump"
 		elif moving:
 			pose = "run"
@@ -572,7 +573,7 @@ class Buddy extends CharacterBody2D:
 			pose_time = 0.0
 		else:
 			pose_time += delta
-		var frames := game.pose_frames_for(is_dudu, pose)
+		var frames: Array[Texture2D] = game.pose_frames_for(is_dudu, pose)
 		var frame_index := int(floor(pose_time * game.pose_fps_for(pose)))
 		if pose == "pound_hit":
 			frame_index = mini(frame_index, frames.size() - 1)
@@ -1774,7 +1775,7 @@ func _draw() -> void:
 	if chapter_index == 2:
 		_draw_cloud_chapter()
 		return
-	draw_rect(Rect2(0, -720, WORLD_WIDTH, 1500), Color("#fff0e6"), true)
+	draw_rect(WORLD_BACKGROUND_RECT, Color("#fff0e6"), true)
 	# Distant frosting hills create a soft crayon-doodle horizon.
 	for index in 11:
 		var x := float(index) * 520.0 - 100.0
@@ -1879,7 +1880,7 @@ func _draw() -> void:
 
 
 func _draw_cloud_chapter() -> void:
-	draw_rect(Rect2(0, -720, WORLD_WIDTH, 1500), Color("#e4f4f3"), true)
+	draw_rect(WORLD_BACKGROUND_RECT, Color("#e4f4f3"), true)
 	for index in 12:
 		var x := float(index) * 470.0 - 90.0
 		var height := 90.0 + float((index * 31) % 82)
