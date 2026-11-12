@@ -2,8 +2,7 @@ extends "res://scripts/menu_modal.gd"
 
 const CATALOG := preload("res://scripts/costume_catalog.gd")
 
-## Demo-only balance for the standalone scene. The real balance will be injected
-## from SaveStore when persistence is implemented.
+## Standalone preview balance; the title screen replaces it with SaveStore state.
 @export_range(0, 9999, 1) var preview_star_balance := 18
 
 signal unlock_requested(costume_id: String, price: int)
@@ -15,6 +14,9 @@ var _equipped_by_character: Dictionary = {}
 var _active_character_id := "dudu"
 var _selected_costume_id := ""
 var _character_buttons: Dictionary = {}
+var _has_saved_snapshot := false
+var _pending_unlock_id := ""
+var _pending_unlock_price := 0
 
 var _balance_label: Label
 var _costume_list: VBoxContainer
@@ -25,6 +27,7 @@ var _preview_description: Label
 var _status_label: Label
 var _action_button: Button
 var _request_hint: Label
+var _purchase_confirmation: ConfirmationDialog
 
 
 func _ready() -> void:
@@ -37,9 +40,9 @@ func _ready() -> void:
 	call_deferred("open_panel")
 
 
-## Integration entry point for a future title-screen caller. This is a read-only
-## snapshot; this draft never mutates or saves currency/inventory itself.
-func set_preview_snapshot(star_balance: int, unlocked_ids: Array, equipped_by_character: Dictionary) -> void:
+## Receives the canonical SaveStore state; all writes remain owned by SaveStore.
+func set_save_snapshot(star_balance: int, unlocked_ids: Array, equipped_by_character: Dictionary) -> void:
+	_has_saved_snapshot = true
 	_star_balance = clampi(star_balance, 0, int(CATALOG.currency().get("wallet_cap", 9999)))
 	_unlocked_ids.clear()
 	for value: Variant in unlocked_ids:
@@ -48,6 +51,12 @@ func set_preview_snapshot(star_balance: int, unlocked_ids: Array, equipped_by_ch
 	_equipped_by_character = equipped_by_character.duplicate(true)
 	if _balance_label != null:
 		_refresh_view()
+		_request_hint.text = "服裝解鎖與穿戴狀態會寫入本機存檔。"
+
+
+func show_result_notice(message: String) -> void:
+	if _request_hint != null:
+		_request_hint.text = message
 
 
 func _build_wardrobe_ui() -> void:
@@ -119,11 +128,18 @@ func _build_wardrobe_ui() -> void:
 	_action_button.custom_minimum_size.y = 50
 	_action_button.pressed.connect(_on_action_pressed)
 	content.add_child(_action_button)
-	_request_hint = STYLE.label("此為 UI 草稿；按鈕只送出訊號，尚未連接 SaveStore，不會實際扣糖或存檔。", 13)
+	_request_hint = STYLE.label("預覽模式：示意餘額不會存檔；實際解鎖需由標題頁接上 SaveStore。", 13)
 	_request_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_request_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_request_hint.add_theme_color_override("font_color", STYLE.MUTED)
 	content.add_child(_request_hint)
+	_purchase_confirmation = ConfirmationDialog.new()
+	_purchase_confirmation.process_mode = Node.PROCESS_MODE_ALWAYS
+	_purchase_confirmation.title = "確認解鎖服裝"
+	_purchase_confirmation.confirmed.connect(_confirm_pending_unlock)
+	add_child(_purchase_confirmation)
+	_purchase_confirmation.get_ok_button().text = "確認解鎖"
+	_purchase_confirmation.get_cancel_button().text = "取消"
 	add_close_button()
 
 
@@ -146,7 +162,7 @@ func _select_costume(costume_id: String) -> void:
 func _refresh_view() -> void:
 	if _balance_label == null:
 		return
-	_balance_label.text = "示意星星糖餘額：%d 顆" % _star_balance
+	_balance_label.text = ("星星糖餘額：%d 顆" if _has_saved_snapshot else "示意星星糖餘額：%d 顆") % _star_balance
 	var entries := CATALOG.all_costumes(_active_character_id)
 	if entries.is_empty():
 		return
@@ -223,9 +239,22 @@ func _on_action_pressed() -> void:
 	if CATALOG.is_unlocked(_selected_costume_id, _unlocked_ids):
 		if CATALOG.is_equipped(_selected_costume_id, _equipped_by_character):
 			return
+		_request_hint.text = "已送出穿戴請求，正在保存狀態……"
 		equip_requested.emit(_selected_costume_id)
-		_request_hint.text = "已送出穿戴請求；正式流程由外部更新存檔快照後再刷新介面。"
 		return
 	if CATALOG.can_unlock(_selected_costume_id, _star_balance, _unlocked_ids):
-		unlock_requested.emit(_selected_costume_id, int(item.get("price", 0)))
-		_request_hint.text = "已送出解鎖請求；正式流程需先確認，再由 SaveStore 原子扣糖。"
+		_pending_unlock_id = _selected_costume_id
+		_pending_unlock_price = int(item.get("price", 0))
+		_purchase_confirmation.dialog_text = "解鎖「%s」需要 %d 顆星星糖，確認後才會扣除。" % [str(item.get("display_name", _pending_unlock_id)), _pending_unlock_price]
+		_purchase_confirmation.popup_centered(Vector2i(440, 190))
+
+
+func _confirm_pending_unlock() -> void:
+	if _pending_unlock_id.is_empty():
+		return
+	var costume_id := _pending_unlock_id
+	var price := _pending_unlock_price
+	_pending_unlock_id = ""
+	_pending_unlock_price = 0
+	_request_hint.text = "已確認，正在保存解鎖狀態……"
+	unlock_requested.emit(costume_id, price)

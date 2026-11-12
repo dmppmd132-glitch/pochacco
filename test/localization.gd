@@ -78,8 +78,10 @@ func _run() -> void:
 		await process_frame
 	var title_label: Label = title.find_child("GameTitle", true, false)
 	var start_button: Button = title.find_child("StartAdventure", true, false)
+	var wardrobe_button: Button = title.find_child("WardrobeButton", true, false)
 	_check(title_label != null and title_label.text == "嘟嘟與帕恰狗\n點心島的奇幻野餐", "title renders Traditional Chinese through the service")
 	_check(start_button != null and start_button.text == "開始冒險", "start control is Traditional Chinese")
+	_check(wardrobe_button != null and wardrobe_button.text == "衣櫃換裝", "wardrobe control is Traditional Chinese")
 	title.queue_free()
 	await process_frame
 	_finish()

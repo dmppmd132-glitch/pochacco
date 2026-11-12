@@ -1,8 +1,7 @@
 class_name CostumeCatalog
 extends RefCounted
 
-## Data-only catalog and pure unlock predicates. Persistence and purchases belong
-## to SaveStore in the next implementation stage.
+## Data-only catalog and pure unlock predicates; SaveStore owns persistence and transactions.
 const CATALOG_PATH := "res://data/costumes/catalog.json"
 
 static var _load_attempted := false

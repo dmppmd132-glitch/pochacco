@@ -16,6 +16,7 @@
     "test:terrain-render": "godot --audio-driver Dummy --path . --script test/terrain_render.gd && godot --audio-driver Dummy --path . --script test/finish_render.gd && godot --audio-driver Dummy --path . --script test/player_grounding_render.gd",
     "test:combat": "godot --headless --path . --script test/yarn_combat.gd",
     "test:contract": "godot --headless --audio-driver Dummy --path . --script test/gameplay_contract.gd && godot --headless --audio-driver Dummy --path . --script test/ui_contract.gd && godot --headless --audio-driver Dummy --path . --script test/tweak_regression.gd && godot --headless --audio-driver Dummy --path . --script test/vfx_regression.gd",
+    "test:costume-store": "godot --headless --audio-driver Dummy --path . --script test/costume_save_store_contract.gd",
     "test:audio-completion": "godot --headless --audio-driver Dummy --path . --script test/audio_completion.gd",
     "dev": "node scripts/manus/runtime-command.cjs ./server.mjs",
     "build": "node scripts/manus/runtime-command.cjs ./build.mjs",

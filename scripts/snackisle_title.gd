@@ -3,8 +3,10 @@ extends Control
 const DUDU_TEXTURE: Texture2D = preload("res://assets/snackisle/dudu-512.png")
 const POCHACCO_TEXTURE: Texture2D = preload("res://assets/snackisle/pochacco-512.png")
 const TITLE_FONT: Font = preload("res://assets/template/fonts/display/display_title.tres")
+const WARDROBE_SCENE: PackedScene = preload("res://scenes/wardrobe_screen.tscn")
 
 var title_panel: PanelContainer
+var _wardrobe_instance: Node
 
 
 func _ready() -> void:
@@ -116,10 +118,19 @@ func _build_title() -> void:
 	start_button.name = "StartAdventure"
 	start_button.pressed.connect(_start_game)
 	stack.add_child(start_button)
+	var secondary_actions := HBoxContainer.new()
+	secondary_actions.name = "SecondaryActions"
+	secondary_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	secondary_actions.add_theme_constant_override("separation", 8)
+	stack.add_child(secondary_actions)
 	var chapter_two_button := _make_button("體驗第二章｜雲朵森林", false)
 	chapter_two_button.name = "StartChapterTwo"
 	chapter_two_button.pressed.connect(_start_chapter_two)
-	stack.add_child(chapter_two_button)
+	secondary_actions.add_child(chapter_two_button)
+	var wardrobe_button := _make_button("衣櫃換裝", false)
+	wardrobe_button.name = "WardrobeButton"
+	wardrobe_button.pressed.connect(_open_wardrobe)
+	secondary_actions.add_child(wardrobe_button)
 	var footer := Label.new()
 	footer.name = "FooterHint"
 	footer.text = _l10n("粉紅大福 × 香蕉上衣 × 星星糖")
@@ -221,9 +232,22 @@ func _layout_title() -> void:
 		start_button.custom_minimum_size = Vector2(200, 42) if compact else Vector2(220, 54)
 		start_button.add_theme_font_size_override("font_size", 18 if compact else 22)
 	var chapter_two_button := title_panel.find_child("StartChapterTwo", true, false) as Button
+	var wardrobe_button := title_panel.find_child("WardrobeButton", true, false) as Button
+	var secondary_actions := title_panel.find_child("SecondaryActions", true, false) as HBoxContainer
+	if secondary_actions != null:
+		var gap := 6 if compact else 8
+		secondary_actions.add_theme_constant_override("separation", gap)
+		var inner_width := title_panel.custom_minimum_size.x - (28.0 if compact else 44.0)
+		var button_width := clampf((inner_width - float(gap)) * 0.5, 122.0, 220.0)
+		for secondary_button in [chapter_two_button, wardrobe_button]:
+			if secondary_button == null:
+				continue
+			secondary_button.custom_minimum_size = Vector2(button_width, 42 if compact else 48)
+			secondary_button.add_theme_font_size_override("font_size", 12 if compact else 16)
 	if chapter_two_button != null:
-		chapter_two_button.custom_minimum_size = Vector2(200, 42) if compact else Vector2(220, 48)
-		chapter_two_button.add_theme_font_size_override("font_size", 14 if compact else 17)
+		chapter_two_button.text = _l10n("第二章") if compact else _l10n("體驗第二章｜雲朵森林")
+	if wardrobe_button != null:
+		wardrobe_button.text = _l10n("衣櫃") if compact else _l10n("衣櫃換裝")
 
 
 func _l10n(value: String, placeholders: Dictionary = {}) -> String:
@@ -238,3 +262,55 @@ func _start_game() -> void:
 func _start_chapter_two() -> void:
 	get_tree().set_meta("snackisle_chapter", 2)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
+
+
+func _open_wardrobe() -> void:
+	if is_instance_valid(_wardrobe_instance):
+		return
+	var wardrobe := WARDROBE_SCENE.instantiate()
+	_wardrobe_instance = wardrobe
+	add_child(wardrobe)
+	wardrobe.unlock_requested.connect(_on_wardrobe_unlock_requested.bind(wardrobe))
+	wardrobe.equip_requested.connect(_on_wardrobe_equip_requested.bind(wardrobe))
+	wardrobe.closed.connect(_on_wardrobe_closed.bind(wardrobe))
+	_sync_wardrobe_snapshot(wardrobe)
+
+
+func _sync_wardrobe_snapshot(wardrobe: Node) -> void:
+	var store := get_node_or_null("/root/SaveStore")
+	if store == null:
+		wardrobe.show_result_notice("本機存檔服務目前無法使用。")
+		return
+	wardrobe.set_save_snapshot(
+		store.get_star_candy_balance(),
+		store.get_unlocked_costume_ids(),
+		store.get_equipped_costumes_by_character()
+	)
+
+
+func _on_wardrobe_unlock_requested(costume_id: String, _price: int, wardrobe: Node) -> void:
+	var store := get_node_or_null("/root/SaveStore")
+	if store == null:
+		wardrobe.show_result_notice("存檔服務無法使用，沒有扣除星星糖。")
+		return
+	var success: bool = store.unlock_costume(costume_id)
+	_sync_wardrobe_snapshot(wardrobe)
+	wardrobe.show_result_notice("解鎖成功，餘額與服裝已保存。" if success else "解鎖未完成；餘額不足或存檔失敗，沒有扣糖。")
+
+
+func _on_wardrobe_equip_requested(costume_id: String, wardrobe: Node) -> void:
+	var store := get_node_or_null("/root/SaveStore")
+	if store == null:
+		wardrobe.show_result_notice("存檔服務無法使用，穿戴狀態未變更。")
+		return
+	var success: bool = store.equip_costume(costume_id)
+	_sync_wardrobe_snapshot(wardrobe)
+	wardrobe.show_result_notice("穿戴狀態已保存。" if success else "穿戴未完成；請確認服裝已解鎖或重試。")
+
+
+func _on_wardrobe_closed(wardrobe: Node) -> void:
+	if _wardrobe_instance == wardrobe:
+		_wardrobe_instance = null
+	var wardrobe_button := find_child("WardrobeButton", true, false) as Button
+	if wardrobe_button != null:
+		wardrobe_button.grab_focus()

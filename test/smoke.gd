@@ -22,11 +22,25 @@ func _run() -> void:
 		await process_frame
 	var start_button: Button = title.find_child("StartAdventure", true, false)
 	var chapter_two_button: Button = title.find_child("StartChapterTwo", true, false)
+	var wardrobe_button: Button = title.find_child("WardrobeButton", true, false)
 	var controls_hint: Label = title.find_child("ControlsHint", true, false)
 	_check(start_button != null and start_button.text == "開始冒險", "title screen presents the playable game entry")
 	_check(chapter_two_button != null and chapter_two_button.text == "體驗第二章｜雲朵森林", "title screen provides a localized Chapter Two entry")
+	_check(wardrobe_button != null and wardrobe_button.text == "衣櫃換裝", "title screen provides a wardrobe entry")
 	_check(controls_hint != null and controls_hint.text.contains("觸控／手把"), "title explains the new gamepad-style touch controls")
 	_check(title.find_child("GameTitle", true, false) != null, "title card is present")
+	if wardrobe_button != null:
+		wardrobe_button.pressed.emit()
+		for _wardrobe_open_frame in 3:
+			await process_frame
+		var wardrobe := title.find_child("WardrobeScreen", true, false)
+		_check(wardrobe != null and paused, "wardrobe opens as a pause-owning modal")
+		if wardrobe != null:
+			_check(wardrobe.find_child("CostumeList", true, false) != null, "wardrobe shows the costume catalog")
+			wardrobe.close_panel()
+			for _wardrobe_close_frame in 2:
+				await process_frame
+		_check(not paused, "closing the wardrobe restores the previous pause state")
 	if start_button == null:
 		_finish()
 		return
