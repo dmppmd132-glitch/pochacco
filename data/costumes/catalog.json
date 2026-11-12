@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "currency": {
+    "id": "star_candy",
+    "display_name": "星星糖",
+    "wallet_cap": 9999
+  },
+  "reward_policy": {
+    "grant_on": "chapter_clear",
+    "amount": "collected_star_candies_in_run",
+    "abandoned_run_payout": 0,
+    "replay_policy": "grant_each_completed_run",
+    "idempotency_key": "run_id"
+  },
+  "purchase_policy": {
+    "confirmation_required": true,
+    "deduct_when": "confirmed_purchase",
+    "auto_equip_after_unlock": false,
+    "cosmetic_only": true,
+    "one_costume_per_character_slot": true
+  },
+  "characters": [
+    {
+      "id": "dudu",
+      "display_name": "嘟嘟",
+      "portrait_texture_path": "res://assets/snackisle/dudu-512.png",
+      "default_outfit_id": "dudu_default"
+    },
+    {
+      "id": "pochacco",
+      "display_name": "帕恰狗",
+      "portrait_texture_path": "res://assets/snackisle/pochacco-512.png",
+      "default_outfit_id": "pochacco_default",
+      "default_headwear_id": "pochacco_no_hat"
+    }
+  ],
+  "costumes": [
+    {
+      "id": "dudu_default",
+      "character_id": "dudu",
+      "slot": "outfit",
+      "display_name": "嘟嘟原本造型",
+      "description": "嘟嘟的預設造型。",
+      "unlock_currency_id": null,
+      "price": 0,
+      "unlocked_by_default": true,
+      "icon_texture_path": "res://assets/snackisle/dudu-512.png",
+      "preview_texture_path": "res://assets/snackisle/dudu-512.png",
+      "asset_status": "existing_portrait_preview"
+    },
+    {
+      "id": "dudu_bee_suit",
+      "character_id": "dudu",
+      "slot": "outfit",
+      "display_name": "小蜜蜂裝",
+      "description": "以星星糖解鎖的蜜蜂主題服裝，不改變角色能力。",
+      "unlock_currency_id": "star_candy",
+      "price": 12,
+      "unlocked_by_default": false,
+      "icon_texture_path": null,
+      "preview_texture_path": null,
+      "asset_status": "artwork_pending"
+    },
+    {
+      "id": "dudu_dino_pajamas",
+      "character_id": "dudu",
+      "slot": "outfit",
+      "display_name": "恐龍睡衣",
+      "description": "以星星糖解鎖的恐龍睡衣，不改變角色能力。",
+      "unlock_currency_id": "star_candy",
+      "price": 16,
+      "unlocked_by_default": false,
+      "icon_texture_path": null,
+      "preview_texture_path": null,
+      "asset_status": "artwork_pending"
+    },
+    {
+      "id": "pochacco_default",
+      "character_id": "pochacco",
+      "slot": "outfit",
+      "display_name": "帕恰狗原本造型",
+      "description": "帕恰狗的預設造型。",
+      "unlock_currency_id": null,
+      "price": 0,
+      "unlocked_by_default": true,
+      "icon_texture_path": "res://assets/snackisle/pochacco-512.png",
+      "preview_texture_path": "res://assets/snackisle/pochacco-512.png",
+      "asset_status": "existing_portrait_preview"
+    },
+    {
+      "id": "pochacco_no_hat",
+      "character_id": "pochacco",
+      "slot": "headwear",
+      "display_name": "不戴帽子",
+      "description": "帕恰狗的預設頭部配件狀態。",
+      "unlock_currency_id": null,
+      "price": 0,
+      "unlocked_by_default": true,
+      "icon_texture_path": "res://assets/snackisle/pochacco-512.png",
+      "preview_texture_path": "res://assets/snackisle/pochacco-512.png",
+      "asset_status": "existing_portrait_preview"
+    },
+    {
+      "id": "pochacco_detective_hat",
+      "character_id": "pochacco",
+      "slot": "headwear",
+      "display_name": "小偵探帽",
+      "description": "以星星糖解鎖的小偵探帽，不改變角色能力。",
+      "unlock_currency_id": "star_candy",
+      "price": 8,
+      "unlocked_by_default": false,
+      "icon_texture_path": null,
+      "preview_texture_path": null,
+      "asset_status": "artwork_pending"
+    }
+  ]
+}
