@@ -39,6 +39,7 @@ jobs:
             --output "$RUNNER_TEMP/godot.zip"
           unzip -q "$RUNNER_TEMP/godot.zip" -d "$godot_dir"
           chmod +x "$godot_dir/Godot_v${version}-stable_linux.x86_64"
+          ln -sf "$godot_dir/Godot_v${version}-stable_linux.x86_64" "$godot_dir/godot"
           echo "$godot_dir" >> "$GITHUB_PATH"
           echo "GODOT_BIN=$godot_dir/Godot_v${version}-stable_linux.x86_64" >> "$GITHUB_ENV"
 
