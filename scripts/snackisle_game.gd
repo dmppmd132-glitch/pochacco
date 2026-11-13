@@ -34,6 +34,7 @@ const POCHACCO_VICTORY_FRAMES: Array[Texture2D] = [POCHACCO_VICTORY_POSE]
 const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
 const WORLD_WIDTH := 5200.0
 const GROUND_Y := 620.0
+const START_PLATFORM_TOP := 530.0
 const GRAVITY := 1450.0
 const DUDU_JUMP_SPEED := 560.0
 const POCHACCO_JUMP_SPEED := 620.0
@@ -686,7 +687,7 @@ func _ready() -> void:
 	spawn_buddies()
 	build_camera()
 	build_hud()
-	show_toast(_l10n("章二開場提示") if chapter_index == 2 else "怪盜喵嗚偷走了噴泉閥門！先讓嘟嘟跳上戚風蛋糕收集星星糖。")
+	show_toast(_l10n("章二開場提示") if chapter_index == 2 else "怪盜喵嗚偷走了噴泉閥門！沿地面靠近戚風蛋糕，再讓嘟嘟跳上去收集星星糖。")
 	_update_objective()
 	queue_redraw()
 
@@ -783,7 +784,7 @@ func build_world() -> void:
 	_add_platform(0, GROUND_Y, 2120, 220, "strawberry")
 	_add_platform(2720, GROUND_Y, 330, 220, "cake")
 	_add_platform(3380, GROUND_Y, 1820, 220, "strawberry")
-	_add_platform(500, 500, 185, 26, "chiffon", true)
+	_add_platform(500, START_PLATFORM_TOP, 185, 26, "chiffon", true)
 	_add_platform(735, 410, 175, 25, "biscuit")
 	_add_platform(1210, 525, 165, 24, "chocolate")
 	_add_platform(1780, 505, 170, 24, "biscuit")

@@ -54,6 +54,11 @@ func _run() -> void:
 	if game == null or not game.has_method("switch_character"):
 		_finish()
 		return
+	var game_constants: Dictionary = game.get_script().get_script_constant_map()
+	var opening_platform_rise: float = float(game_constants["GROUND_Y"]) - float(game_constants["START_PLATFORM_TOP"])
+	var dudu_jump_speed: float = float(game_constants["DUDU_JUMP_SPEED"])
+	var dudu_jump_apex: float = dudu_jump_speed * dudu_jump_speed / (2.0 * float(game_constants["GRAVITY"]))
+	_check(dudu_jump_apex >= opening_platform_rise + 16.0, "Dudu cannot reach the first chiffon platform with safe clearance")
 	for _frame in 3:
 		await process_frame
 	_check(game.health == 3 and game.hearts_view.health == 3, "three strawberry mochi hearts start full")
