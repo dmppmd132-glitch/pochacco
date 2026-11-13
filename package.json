@@ -8,6 +8,7 @@
     "verify-export": "node scripts/check-exported-pack.mjs",
     "check": "node scripts/manus/runtime-command.cjs ./verify.mjs",
     "test": "godot --headless --path . -s test/smoke.gd",
+    "test:cloud-gust": "godot --headless --audio-driver Dummy --path . --script test/cloud_gust_contract.gd",
     "test:responsive": "godot --headless --path . --script test/responsive_layout.gd",
     "test:audio": "node scripts/check-audio.mjs",
     "test:checks": "node --test test/godot-check.test.mjs test/exported-pack-profile.test.mjs test/loader-language.test.mjs",
