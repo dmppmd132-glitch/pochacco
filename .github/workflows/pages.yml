@@ -1,4 +1,4 @@
-name: Deploy PWA to GitHub Pages
+name: Build and deploy PWA to GitHub Pages
 
 on:
   push:
@@ -23,9 +23,57 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Godot 4.7.2 and Web export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="4.7.2"
+          godot_dir="$RUNNER_TEMP/godot"
+          mkdir -p "$godot_dir"
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://github.com/godotengine/godot/releases/download/${version}-stable/Godot_v${version}-stable_linux.x86_64.zip" \
+            --output "$RUNNER_TEMP/godot.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$godot_dir"
+          chmod +x "$godot_dir/Godot_v${version}-stable_linux.x86_64"
+          echo "$godot_dir" >> "$GITHUB_PATH"
+          echo "GODOT_BIN=$godot_dir/Godot_v${version}-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://github.com/godotengine/godot/releases/download/${version}-stable/Godot_v${version}-stable_export_templates.tpz" \
+            --output "$RUNNER_TEMP/export-templates.tpz"
+          template_target="$HOME/.local/share/godot/export_templates/${version}.stable"
+          mkdir -p "$template_target"
+          unzip -p "$RUNNER_TEMP/export-templates.tpz" templates/web_nothreads_release.zip > "$template_target/web_nothreads_release.zip"
+          test -s "$template_target/web_nothreads_release.zip"
+          "$godot_dir/Godot_v${version}-stable_linux.x86_64" --headless --version
+      - name: Restore and verify locked assets
+        run: npm run ci:hydrate-assets
+      - name: Import Godot resources
+        run: godot --headless --editor --path . --import
+      - name: Test opening platform, cloud gust and source contracts
+        run: |
+          npm run test:platform-route
+          npm run test:cloud-gust
+          npm run test:checks
+      - name: Export standalone Web PWA
+        run: npm run ci:export
+      - name: Verify exported game pack
+        run: node scripts/check-exported-pack.mjs dist/standalone/index.pck --release-profile --deployment-smoke
+      - name: Preserve third-party notices
+        run: |
+          cp github-pages/THIRD_PARTY_NOTICES.txt dist/standalone/
+          cp github-pages/open-source-licenses.html dist/standalone/
+      - name: Sync GitHub Pages package
+        run: npm run pages:sync
+      - name: Verify synchronized game pack
+        run: node scripts/check-exported-pack.mjs github-pages/index.pck --release-profile --deployment-smoke
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload site artifact
+      - name: Upload verified Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: github-pages

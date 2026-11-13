@@ -48,11 +48,11 @@ iPhone／iPad 請以 Safari 開啟網址，選「分享」→「加入主畫面�
 
 ## 專案與部署
 
-遊戲原始碼位於專案根目錄。GitHub Pages 部署 `github-pages/` 中的自包含 PWA（含 `index.wasm`、`index.pck`、manifest、Service Worker 與離線頁）；`.github/workflows/pages.yml` 會在 `main` 分支更新時發佈此目錄。Webdev 管理的 `site/` 是另一份預覽輸出，不是 GitHub Pages 的部署來源。
+遊戲原始碼位於專案根目錄。GitHub Pages 部署 `github-pages/` 中的自包含 PWA（含 `index.wasm`、`index.pck`、manifest、Service Worker 與離線頁）；`.github/workflows/pages.yml` 會在 `main` 分支更新時，依 `assets.lock.json` 還原並驗證素材、安裝 Godot 4.7.2 與 Web 匯出模板、執行平台／陣風回歸測試、匯出及檢查 PWA，再同步並部署 GitHub Pages。也可從 Actions 頁面手動執行 workflow。Webdev 管理的 `site/` 是另一份預覽輸出，不是 GitHub Pages 的部署來源。
 
-更新遊戲後，先執行 `npm run build` 產生 `dist/standalone/`，再執行 `npm run pages:sync` 更新 `github-pages/`，提交並推送到 `main` 後即可觸發 Pages 部署。同步腳本會排除本機 build fingerprint，並確認 PWA 包含 WASM/PCK 且沒有 Manus Storage 絕對路徑。
+更新遊戲並推送到 `main` 後，GitHub Actions 會自動完成建置與部署；本機也可用 `npm run ci:hydrate-assets` 還原鎖定素材、`npm run ci:export` 匯出 `dist/standalone/`，再用 `npm run pages:sync` 更新 Pages 目錄。同步腳本會排除本機 build fingerprint，並確認 PWA 包含 WASM/PCK 且沒有 Manus Storage 絕對路徑。
 
-執行完整 Godot smoke test：`npm test`。只驗證第二章週期陣風的區域邊界、活動／平靜週期與角色實際受側推時，可執行 `npm run test:cloud-gust`。
+驗證第一章開場平台可達、彈跳、落到下一平台並取得糖果：`npm run test:platform-route`。驗證第二章週期陣風的區域邊界、活動／平靜週期與角色實際受側推：`npm run test:cloud-gust`。Pages workflow 也會在實際匯出的 PCK 上重跑這兩項測試。
 
 ## 注意事項
 

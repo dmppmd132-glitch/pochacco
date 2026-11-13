@@ -18,7 +18,12 @@ const packPath = packArgument ? resolve(projectRoot, packArgument)
 // can request the stripped profile with --release-profile.
 const releaseProfile = process.argv.includes('--release-profile') ||
   Boolean(managedPack && resolve(packPath) === resolve(projectRoot, 'dist/standalone/index.pck'))
+const deploymentSmoke = process.argv.includes('--deployment-smoke')
 const godot = process.env.GODOT_BIN || 'godot'
+
+if (deploymentSmoke && !releaseProfile) {
+  throw new Error('--deployment-smoke requires an explicit release-profile check')
+}
 
 if (!existsSync(packPath)) {
   throw new Error(`exported pack not found: ${packPath}`)
@@ -50,9 +55,11 @@ writeFileSync(
   `extends SceneTree\n\nconst REQUIRED_DIRECTORIES := [\n${requiredDirectoryLines}\n]\nconst EXCLUDED_DIRECTORIES := [\n${directoryLines}\n]\n\nfunc _initialize() -> void:\n\tfor directory in REQUIRED_DIRECTORIES:\n\t\tif not DirAccess.dir_exists_absolute(directory):\n\t\t\tpush_error("[PCK_CONTENTS_FAIL] pack not mounted or required directory missing: " + directory)\n\t\t\tquit(1)\n\t\t\treturn\n\tfor directory in EXCLUDED_DIRECTORIES:\n\t\tif DirAccess.dir_exists_absolute(directory):\n\t\t\tpush_error("[PCK_CONTENTS_FAIL] excluded directory present: " + directory)\n\t\t\tquit(1)\n\t\t\treturn\n\tprint("[PCK_CONTENTS_PASS] required directories present and excluded directories absent")\n\tquit(0)\n`,
 )
 
-const checks = [
+const allChecks = [
   [contentsProbe, '[PCK_CONTENTS_PASS]'],
   [resolve(projectRoot, 'test/exported_pack_boot.gd'), '[PCK_BOOT_PASS]'],
+  [resolve(projectRoot, 'test/platform_route_contract.gd'), '[PLATFORM_ROUTE_CONTRACT_PASS]'],
+  [resolve(projectRoot, 'test/cloud_gust_contract.gd'), '[CLOUD_GUST_CONTRACT_PASS]'],
   [resolve(projectRoot, 'test/audio_idle_regression.gd'), '[AUDIO_IDLE_PASS]'],
   [resolve(projectRoot, 'test/terrain_regression.gd'), '[TERRAIN_PASS]'],
   [resolve(projectRoot, 'test/finish_regression.gd'), '[FINISH_PASS]'],
@@ -66,6 +73,7 @@ const checks = [
   [resolve(projectRoot, 'test/vfx_regression.gd'), '[VFX_PASS]'],
   [resolve(projectRoot, 'test/audio_completion.gd'), '[AUDIO_COMPLETION_PASS]'],
 ]
+const checks = deploymentSmoke ? allChecks.slice(0, 4) : allChecks
 let failed = false
 try {
   for (const [index, [script, marker]] of checks.entries()) {
