@@ -481,6 +481,9 @@ class Buddy extends CharacterBody2D:
 		if absf(direction) > 0.05:
 			facing = signf(direction)
 		var on_floor_before := is_on_floor()
+		# A trampoline sets a negative Y impulse on landing; the floor flag can stay true until the next slide.
+		if on_floor_before and velocity.y < 0.0:
+			on_floor_before = false
 		if on_floor_before:
 			velocity.y = maxf(velocity.y, 0.0)
 		else:
@@ -559,6 +562,11 @@ class Buddy extends CharacterBody2D:
 					game.show_toast("用帕恰狗的香蕉迴旋鏢敲暈雲朵風靈，再讓嘟嘟屁屁坐擊！" if game.chapter_index == 2 else "先讓奶油怪踩上香蕉皮，再用嘟嘟屁屁坐擊！")
 		if absf(velocity.x) > 0.1 and not is_on_floor():
 			velocity.x = move_toward(velocity.x, direction * speed, air_acceleration() * delta)
+		var cloud_gust: float = game.cloud_gust_force(global_position)
+		if cloud_gust != 0.0:
+			var gust_collision: KinematicCollision2D = move_and_collide(Vector2(cloud_gust * delta * 0.6, 0.0))
+			if gust_collision != null:
+				velocity.x = maxf(0.0, velocity.x)
 		if is_on_floor() and ground_pounding:
 			ground_pounding = false
 			pound_recovery_time = 0.28
@@ -597,7 +605,7 @@ class Buddy extends CharacterBody2D:
 			pose_time = 0.0
 		else:
 			pose_time += delta
-		var frames := game.pose_frames_for(is_dudu, pose)
+		var frames: Array[Texture2D] = game.pose_frames_for(is_dudu, pose)
 		var frame_index := int(floor(pose_time * game.pose_fps_for(pose)))
 		if pose == "pound_hit":
 			frame_index = mini(frame_index, frames.size() - 1)
@@ -785,7 +793,7 @@ func build_world() -> void:
 	_add_platform(2720, GROUND_Y, 330, 220, "cake")
 	_add_platform(3380, GROUND_Y, 1820, 220, "strawberry")
 	_add_platform(500, START_PLATFORM_TOP, 185, 26, "chiffon", true)
-	_add_platform(735, 410, 175, 25, "biscuit")
+	_add_platform(700, 410, 175, 25, "biscuit")
 	_add_platform(1210, 525, 165, 24, "chocolate")
 	_add_platform(1780, 505, 170, 24, "biscuit")
 	_add_platform(2190, 548, 174, 24, "biscuit")
@@ -1513,6 +1521,12 @@ func is_cloud_updraft(x: float) -> bool:
 	return chapter_index == 2 and ((x >= 930.0 and x <= 1260.0) or (x >= 2200.0 and x <= 2460.0) or (x >= 3650.0 and x <= 3860.0))
 
 
+func cloud_gust_force(at: Vector2) -> float:
+	if chapter_index != 2 or at.x < 2840.0 or at.x > 3050.0 or at.y < 390.0 or at.y > 610.0:
+		return 0.0
+	return -420.0 if fposmod(time_alive, 3.8) < 1.25 else 0.0
+
+
 func plate_is_held() -> bool:
 	return plate_pressed and is_instance_valid(pochacco) and absf(pochacco.global_position.x - plate_x) < 115.0
 
@@ -1928,10 +1942,19 @@ func _draw_cloud_chapter() -> void:
 			var ribbon_x: float = zone.x + sin(time_alive * 2.3 + ribbon) * 17.0 + ribbon * 11.0
 			var ribbon_y: float = zone.y - fmod(time_alive * 74.0 + ribbon * 47.0, 150.0)
 			draw_line(Vector2(ribbon_x, ribbon_y + 20.0), Vector2(ribbon_x - 8.0, ribbon_y - 14.0), Color("#86c8c5", 0.62), 4.0, true)
+	var gust_active := fposmod(time_alive, 3.8) < 1.25
+	var gust_tint := Color("#7ab9bb", 0.64) if gust_active else Color("#9dcfc3", 0.30)
+	for ribbon in 5:
+		var gust_x := 2854.0 + float(ribbon) * 38.0
+		var gust_y := 430.0 + fmod(float(ribbon) * 41.0 + time_alive * 66.0, 150.0)
+		draw_line(Vector2(gust_x + 20.0, gust_y), Vector2(gust_x - 18.0, gust_y), gust_tint, 4.0, true)
+		draw_line(Vector2(gust_x - 18.0, gust_y), Vector2(gust_x - 9.0, gust_y - 7.0), gust_tint, 3.0, true)
+		draw_line(Vector2(gust_x - 18.0, gust_y), Vector2(gust_x - 9.0, gust_y + 7.0), gust_tint, 3.0, true)
 	var font: Font = GAME_FONT
 	if font != null:
 		draw_string(font, Vector2(100, 332), _l10n("棉花糖雲朵森林"), HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color("#548c86"))
 		draw_string(font, Vector2(cloud_windmill_x, 464), _l10n("雲朵風車風鈴"), HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Color("#658d81"))
+		draw_string(font, Vector2(2945, 405), "週期陣風", HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("#548c86"))
 		draw_string(font, Vector2(plate_x, 576), _l10n("雲朵踏板"), HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color("#658d81"))
 		draw_string(font, Vector2(cloud_boss_x, 462), _l10n("棉花糖風靈"), HORIZONTAL_ALIGNMENT_CENTER, -1, 21, Color("#658d81"))
 	# Windmill bell is the first chapter-two puzzle target.

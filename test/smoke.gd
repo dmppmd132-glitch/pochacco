@@ -61,6 +61,26 @@ func _run() -> void:
 	_check(dudu_jump_apex >= opening_platform_rise + 16.0, "Dudu cannot reach the first chiffon platform with safe clearance")
 	for _frame in 3:
 		await process_frame
+	game.dudu.global_position = Vector2(420.0, game.GROUND_Y - 27.0)
+	game.dudu.velocity = Vector2.ZERO
+	game.pochacco.global_position = Vector2(100.0, game.GROUND_Y - 27.0)
+	game.pochacco.velocity = Vector2.ZERO
+	for _frame in 2:
+		await physics_frame
+	var route_stars_before: int = game.star_candies
+	var trampoline_bounce_seen := false
+	Input.action_press("move_right")
+	Input.action_press("jump")
+	await physics_frame
+	Input.action_release("jump")
+	for _frame in 90:
+		await physics_frame
+		if game.dudu.velocity.y <= -680.0:
+			trampoline_bounce_seen = true
+	Input.action_release("move_right")
+	_check(game.star_candies > route_stars_before, "opening jump path did not collect a real star candy")
+	_check(trampoline_bounce_seen, "first chiffon platform did not produce its trampoline bounce")
+	_check(game.dudu.is_on_floor() and game.dudu.global_position.x >= 717.0 and game.dudu.global_position.x <= 940.0, "opening trampoline chain did not land on the next biscuit platform")
 	_check(game.health == 3 and game.hearts_view.health == 3, "three strawberry mochi hearts start full")
 	_check(game.dudu != null and game.pochacco != null, "both playable companions are spawned")
 	_check(game.active_is_dudu() and game.get_active_buddy() == game.dudu, "Dudu leads at the start")
@@ -243,6 +263,22 @@ func _run() -> void:
 		return
 	_check(cloud_game.chapter_label.text == "第二章｜棉花糖雲朵森林", "Chapter Two chapter title is localized in the HUD")
 	_check(cloud_game.is_cloud_updraft(1100.0) and not cloud_game.is_cloud_updraft(1800.0), "cloud updraft zones are active only in the new chapter")
+	var saved_cloud_time: float = cloud_game.time_alive
+	cloud_game.time_alive = 0.2
+	_check(cloud_game.cloud_gust_force(Vector2(2940.0, 500.0)) < 0.0, "Chapter Two gust lane does not push against forward travel during its active pulse")
+	_check(is_zero_approx(cloud_game.cloud_gust_force(Vector2(2700.0, 500.0))), "Chapter Two gust leaks outside its marked lane")
+	cloud_game.dudu.global_position = Vector2(2940.0, cloud_game.GROUND_Y - 27.0)
+	cloud_game.dudu.velocity = Vector2.ZERO
+	Input.action_release("move_right")
+	for _frame in 2:
+		await physics_frame
+	var gust_start_x: float = cloud_game.dudu.global_position.x
+	for _frame in 8:
+		await physics_frame
+	_check(cloud_game.dudu.global_position.x < gust_start_x - 12.0, "active cloud gust has no physical side-push effect")
+	cloud_game.time_alive = 2.0
+	_check(is_zero_approx(cloud_game.cloud_gust_force(Vector2(2940.0, 500.0))), "Chapter Two gust has no safe calm window")
+	cloud_game.time_alive = saved_cloud_time
 	cloud_game.touch_buttons["Y"].pressed.emit()
 	_check(cloud_game.team_hug_time > 0.0, "Y performs a visible gather hug in Chapter Two")
 	cloud_game.switch_character()
