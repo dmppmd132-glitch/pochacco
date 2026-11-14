@@ -32,6 +32,7 @@ const POCHACCO_ATTACK_FRAMES: Array[Texture2D] = [POCHACCO_ATTACK_POSE]
 const POCHACCO_HURT_FRAMES: Array[Texture2D] = [POCHACCO_HURT_POSE]
 const POCHACCO_VICTORY_FRAMES: Array[Texture2D] = [POCHACCO_VICTORY_POSE]
 const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
+const CHAPTER_THREE_CONTROLLER: Script = preload("res://scripts/chapter_three.gd")
 const WORLD_WIDTH := 5200.0
 const GROUND_Y := 620.0
 const START_PLATFORM_TOP := 530.0
@@ -48,6 +49,7 @@ const DUDU_AIR_ACCELERATION := 800.0
 const POCHACCO_AIR_ACCELERATION := 1050.0
 
 var chapter_index := 1
+var chapter_three
 var cloud_windmill_active := false
 var cloud_gate
 var cloud_windmill_x := 1650.0
@@ -696,13 +698,13 @@ class Buddy extends CharacterBody2D:
 
 
 func _ready() -> void:
-	chapter_index = clampi(int(get_tree().get_meta("snackisle_chapter", 1)), 1, 2)
+	chapter_index = clampi(int(get_tree().get_meta("snackisle_chapter", 1)), 1, 3)
 	_ensure_input_actions()
 	build_world()
 	spawn_buddies()
 	build_camera()
 	build_hud()
-	show_toast(_l10n("章二開場提示") if chapter_index == 2 else "怪盜喵嗚偷走了噴泉閥門！沿地面靠近戚風蛋糕，再讓嘟嘟跳上去收集星星糖。")
+	show_toast(_l10n("章二開場提示") if chapter_index == 2 else ("齒輪城的鐘芯停擺了！先在齒輪廣場觀察箭頭，再讓帕恰狗敲鈴換向。" if chapter_index == 3 else "怪盜喵嗚偷走了噴泉閥門！沿地面靠近戚風蛋糕，再讓嘟嘟跳上去收集星星糖。"))
 	_update_objective()
 	queue_redraw()
 
@@ -756,6 +758,8 @@ func _l10n(value: String, placeholders: Dictionary = {}) -> String:
 
 
 func _chapter_title() -> String:
+	if chapter_index == 3:
+		return _l10n("第三章｜糖霜齒輪城")
 	return _l10n("第二章｜棉花糖雲朵森林") if chapter_index == 2 else _l10n("第一章｜草莓蛋糕村")
 
 
@@ -793,6 +797,9 @@ func pose_fps_for(pose: String) -> float:
 
 
 func build_world() -> void:
+	if chapter_index == 3:
+		_build_gear_world()
+		return
 	if chapter_index == 2:
 		_build_cloud_world()
 		return
@@ -838,6 +845,36 @@ func build_world() -> void:
 	_add_ingredient(Vector2(2230, 507))
 	_add_ingredient(Vector2(4010, 462))
 	plate_x = 2940.0
+
+func _build_gear_world() -> void:
+	_add_platform(0, GROUND_Y, 1380, 220, "wafer")
+	_add_platform(1480, GROUND_Y, 1180, 220, "biscuit")
+	_add_platform(2820, GROUND_Y, 1040, 220, "wafer")
+	_add_platform(4020, GROUND_Y, 1180, 220, "biscuit")
+	_add_platform(320, 555, 240, 24, "chiffon")
+	_add_platform(1280, 470, 190, 24, "biscuit")
+	_add_platform(2420, 390, 190, 24, "chiffon")
+	_add_platform(3740, 300, 210, 24, "biscuit")
+	chapter_three = CHAPTER_THREE_CONTROLLER.new()
+	chapter_three.name = "ChapterThreeGearController"
+	chapter_three.game = self
+	add_child(chapter_three)
+	chapter_three.setup(self)
+	_add_star(Vector2(410, 525))
+	_add_star(Vector2(690, 450))
+	_add_star(Vector2(1030, 450))
+	_add_star(Vector2(1370, 420))
+	_add_star(Vector2(1870, 375))
+	_add_star(Vector2(2200, 375))
+	_add_star(Vector2(2540, 330))
+	_add_star(Vector2(3120, 310))
+	_add_star(Vector2(3490, 250))
+	_add_star(Vector2(3890, 245))
+	_add_star(Vector2(4390, 540))
+	_add_ingredient(Vector2(720, 458), "gear")
+	_add_ingredient(Vector2(2180, 380), "gear")
+	_add_ingredient(Vector2(3500, 260), "gear")
+	checkpoint_x = 160.0
 
 
 func _build_cloud_world() -> void:
@@ -1457,13 +1494,22 @@ func open_guide() -> void:
 	_clear_touch_input()
 	get_tree().paused = true
 	var controls := "A 跳躍；B 嘟嘟滾滾／帕恰狗香蕉迴旋鏢；X 嘟嘟屁屁坐擊／帕恰狗偵探嗅嗅；Y 集合抱抱；L 切換角色。手機也可在右上角色頭像區快速雙擊或左右滑動切換。R 是嘟嘟攻略、帕恰狗香蕉皮。靠近合作機關時，畫面會顯示情境提示。"
-	var chapter_guide := "第一章：先嗅出巧克力牆腳印，再讓嘟嘟滾撞；果醬河由帕恰狗踩踏板、嘟嘟撞開橋頭；Boss 踩香蕉皮滑倒後再坐擊核心。" if chapter_index == 1 else "第二章：用迴旋鏢敲響風車鈴開雲門；帕恰狗踩住雲朵踏板，嘟嘟滾破橋閘；Boss 露出鈴心後再坐擊。"
+	var chapter_guide := "第一章：先嗅出巧克力牆腳印，再讓嘟嘟滾撞；果醬河由帕恰狗踩踏板、嘟嘟撞開橋頭；Boss 踩香蕉皮滑倒後再坐擊核心。" if chapter_index == 1 else ("第二章：用迴旋鏢敲響風車鈴開雲門；帕恰狗踩住雲朵踏板，嘟嘟滾破橋閘；Boss 露出鈴心後再坐擊。" if chapter_index == 2 else "第三章：帕恰狗按 X 嗅出齒輪節拍，按 B 敲鈴換向；嘟嘟在煞車踏板按 X 停住齒輪 5 秒，趁停靠記號跳過工坊與鐘樓外環。")
 	pause_overlay = _create_overlay("攻略說明", controls + "\n\n" + chapter_guide, [["繼續遊玩", resume_game]], false)
 
 
 func detect_clues() -> void:
 	if active_is_dudu():
 		show_toast("切換帕恰狗，按 X／E 偵探嗅嗅找線索！")
+		return
+	if chapter_index == 3:
+		clues_visible = true
+		clue_time = 9.0
+		if is_instance_valid(chapter_three):
+			chapter_three.bell_active = true
+		show_toast("帕恰狗嗅到齒輪節拍！黃銅鈴會提示下一個安全方向。")
+		_update_objective()
+		queue_redraw()
 		return
 	if chapter_index == 2:
 		if absf(pochacco.global_position.x - cloud_windmill_x) <= 440.0:
@@ -1640,6 +1686,10 @@ func drop_banana_peel(buddy: Buddy) -> void:
 
 
 func check_boomerang_hit(shot: BananaBoomerang) -> void:
+	if chapter_index == 3:
+		if is_instance_valid(chapter_three):
+			chapter_three.on_boomerang_hit(shot.global_position.x)
+		return
 	if chapter_index == 2:
 		if not cloud_windmill_active and shot.global_position.distance_to(Vector2(cloud_windmill_x, GROUND_Y - 120.0)) < 52.0:
 			cloud_windmill_active = true
@@ -1667,6 +1717,10 @@ func check_boomerang_hit(shot: BananaBoomerang) -> void:
 
 func resolve_ground_pound(buddy: Buddy) -> void:
 	spawn_burst(buddy.global_position + Vector2(0, 24), Color("#f08ca6"))
+	if chapter_index == 3:
+		if is_instance_valid(chapter_three):
+			chapter_three.on_ground_pound(buddy.global_position.x)
+		return
 	if is_instance_valid(hearts_view):
 		pass
 	if absf(buddy.global_position.x - boss_x) < 142.0 and boss_exposed_time > 0.0 and not boss_defeated:
@@ -1697,6 +1751,14 @@ func _contextual_coop_hint() -> String:
 	if not is_instance_valid(active):
 		return ""
 	var x: float = active.global_position.x
+	if chapter_index == 3:
+		if not clues_visible and absf(x - 760.0) <= 300.0:
+			return "齒輪教學：切換帕恰狗按 X 嗅出節拍，再用 B 敲響黃銅鈴。"
+		if clues_visible and absf(x - 1090.0) <= 280.0:
+			return "齒輪教學：帕恰狗按 B 敲鈴換向；嘟嘟在煞車踏板按 X 停靠 5 秒。"
+		if is_instance_valid(chapter_three) and chapter_three.brake_count > 0 and absf(x - 2700.0) <= 320.0:
+			return "發條工坊：觀察停靠記號，趁齒輪停住時跳上下一段。"
+		return "糖霜齒輪城：沿安全平台前進，讓兩個夥伴讀懂機械節奏。"
 	if chapter_index == 1:
 		if not team_weight_activated and is_instance_valid(team_gate) and absf(x - 860.0) <= 250.0:
 			return "合作機關：嘟嘟靠近大福墊後按 Y 集合抱抱。" if active_is_dudu() else "合作機關：切回嘟嘟，靠近大福墊按 Y 集合抱抱。"
@@ -1728,6 +1790,16 @@ func _contextual_coop_hint() -> String:
 
 func _update_objective() -> void:
 	if objective_label == null:
+		return
+	if chapter_index == 3:
+		if is_instance_valid(chapter_three) and chapter_three.core_restored:
+			objective_label.text = _l10n("星星糖鐘芯已啟動！走到鐘樓出口完成第三章。")
+		elif is_instance_valid(chapter_three) and chapter_three.brake_count > 0:
+			objective_label.text = _l10n("齒輪暫停了！趁 5 秒安全窗口越過發條工坊。")
+		elif clues_visible:
+			objective_label.text = _l10n("黃銅鈴線索出現了！用帕恰狗迴旋鏢切換齒輪方向。")
+		else:
+			objective_label.text = _l10n("先用帕恰狗偵探嗅嗅讀懂齒輪節拍，再找煞車踏板。")
 		return
 	if chapter_index == 2:
 		if boss_defeated:
@@ -1773,6 +1845,15 @@ func damage_source(message: String, source_position: Vector2) -> void:
 
 
 func fall_to_safety(_buddy: Buddy) -> void:
+	if chapter_index == 3:
+		var active := get_active_buddy()
+		if is_instance_valid(active) and active.global_position.x > 1320.0 and checkpoint_x < 1320.0:
+			checkpoint_x = 1500.0
+			show_toast("齒輪廣場檢查點已記下！接下來是發條工坊。")
+		elif is_instance_valid(active) and active.global_position.x > 2700.0 and checkpoint_x < 2700.0:
+			checkpoint_x = 2860.0
+			show_toast("發條工坊檢查點已記下！鐘樓外環就在前方。")
+		return
 	if damage_cooldown > 0.0 or run_over:
 		return
 	_damage_and_return("噗通！跌進果醬旁的棉花軟墊，回到最近安全處。", true)
@@ -1869,7 +1950,7 @@ func _process(delta: float) -> void:
 		_update_objective()
 	for index in bubble_stun_times.size():
 		bubble_stun_times[index] = maxf(0.0, bubble_stun_times[index] - delta)
-	if not boss_defeated:
+	if chapter_index != 3 and not boss_defeated:
 		var active = get_active_buddy()
 		var desired_boss_x := 4250.0 + sin(time_alive * 0.7) * 112.0
 		if is_instance_valid(active) and absf(active.global_position.x - boss_x) < 360.0:
@@ -1905,9 +1986,13 @@ func _process(delta: float) -> void:
 			var desired := Vector2(desired_x, 360.0)
 			camera.global_position = camera.global_position.lerp(desired, 1.0 - exp(-delta * 6.5))
 		on_buddy_moved_checkpoint_check()
-		if not boss_defeated and active.global_position.x >= 4960.0:
-			show_toast("月光蜂蜜鈴被風靈守著！先用帕恰狗的香蕉鏢敲暈牠，再用嘟嘟坐擊鈴心。" if chapter_index == 2 else "噴泉閥門被奶油怪守著！先讓牠踩香蕉皮，再用嘟嘟坐擊核心。")
-		elif boss_defeated and active.global_position.distance_to(Vector2(5000.0, GROUND_Y - 34.0)) < 75.0:
+		if chapter_index == 3 and active.global_position.x >= 4480.0 and is_instance_valid(chapter_three) and not chapter_three.core_restored:
+			chapter_three.mark_core_restored()
+		elif chapter_index != 3 and not boss_defeated and active.global_position.x >= 4960.0:
+			show_toast("月光蜂蜜鈴被風靈守著！先用帕恰狗的香蕉鏢敲暈牠，再用嘟嘟坐擊鈴心。" if chapter_index == 2 else "噴泉閥門被奶油怪守著！先讓牠踩香蕉皮，引奶油怪踩中。")
+		elif chapter_index == 3 and is_instance_valid(chapter_three) and chapter_three.core_restored and active.global_position.x >= 4920.0:
+			finish_level()
+		elif chapter_index != 3 and boss_defeated and active.global_position.distance_to(Vector2(5000.0, GROUND_Y - 34.0)) < 75.0:
 			finish_level()
 	if toast_time > 0.0:
 		toast_time -= delta
@@ -1926,6 +2011,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if chapter_index == 3:
+		_draw_gear_chapter()
+		return
 	if chapter_index == 2:
 		_draw_cloud_chapter()
 		return
@@ -2031,6 +2119,41 @@ func _draw() -> void:
 		draw_arc(peel, 19.0, PI * 1.12, PI * 1.96, 12, Color("#f3ca4d"), 8.0, true)
 		draw_circle(peel + Vector2(-18, 4), 3.0, Color("#805246"))
 		draw_circle(peel + Vector2(18, 3), 3.0, Color("#805246"))
+
+func _draw_gear_chapter() -> void:
+	draw_rect(Rect2(0, -720, WORLD_WIDTH, 1500), Color("#f7ead8"), true)
+	for index in 11:
+		var x := float(index) * 520.0 - 90.0
+		var tower_height := 90.0 + float((index * 29) % 76)
+		draw_rect(Rect2(x + 70.0, GROUND_Y - tower_height, 150.0, tower_height), Color("#e8c69e"), true)
+		draw_colored_polygon(PackedVector2Array([Vector2(x + 48, GROUND_Y - tower_height), Vector2(x + 145, GROUND_Y - tower_height - 52), Vector2(x + 242, GROUND_Y - tower_height)]), Color("#d68b68"))
+		draw_circle(Vector2(x + 145, GROUND_Y - tower_height * 0.55), 15.0, Color("#fff0bf"))
+	for index in 7:
+		var gear_x := 360.0 + float(index) * 760.0
+		var gear_y := 170.0 + float((index * 31) % 90)
+		draw_circle(Vector2(gear_x, gear_y), 72.0, Color("#dca66a", 0.44))
+		draw_circle(Vector2(gear_x, gear_y), 50.0, Color("#f5d29b", 0.55), false, 8.0, true)
+		draw_circle(Vector2(gear_x, gear_y), 13.0, Color("#b97655", 0.7))
+	for index in 9:
+		var x := 180.0 + float(index) * 590.0
+		draw_line(Vector2(x, 260.0), Vector2(x + 26.0, 244.0), Color("#cf9a71", 0.65), 4.0, true)
+		draw_circle(Vector2(x + 34.0, 240.0), 4.0, Color("#f2c76b"))
+	var font: Font = GAME_FONT
+	if font != null:
+		draw_string(font, Vector2(100, 330), _l10n("糖霜齒輪城"), HORIZONTAL_ALIGNMENT_LEFT, -1, 31, Color("#9b664e"))
+		draw_string(font, Vector2(760, 465), _l10n("黃銅鈴：改變方向"), HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color("#8e604f"))
+	draw_line(Vector2(1040, GROUND_Y - 15), Vector2(1140, GROUND_Y - 15), Color("#b77b58"), 5.0, true)
+	draw_circle(Vector2(1090, GROUND_Y - 15), 25.0, Color("#f2c968"))
+	draw_circle(Vector2(1090, GROUND_Y - 15), 12.0, Color("#fff1c9"))
+	if is_instance_valid(chapter_three):
+		for index in 3:
+			var mark_x := 690.0 + float(index) * 760.0
+			draw_line(Vector2(mark_x, 480.0 - index * 52.0), Vector2(mark_x, 500.0 - index * 52.0), Color("#f3c86a"), 6.0, true)
+		if chapter_three.core_restored:
+			var core := Vector2(4800.0, GROUND_Y - 90.0)
+			draw_circle(core, 45.0, Color("#ffe487", 0.45))
+			draw_circle(core, 24.0, Color("#f8c95d"))
+			draw_circle(core, 10.0, Color("#fff7c9"))
 
 
 func _draw_cloud_chapter() -> void:
@@ -2186,7 +2309,10 @@ func finish_level() -> void:
 	if is_instance_valid(pochacco):
 		pochacco.victory_pose = true
 	_clear_touch_input()
-	if chapter_index == 2:
+	if chapter_index == 3:
+		var gear_result := _l10n("星星糖鐘芯重新啟動，糖霜齒輪城恢復了節拍。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了第三章的機械解謎！", {"count": "%02d" % star_candies})
+		result_overlay = _create_overlay("鐘芯重新啟動了！", gear_result, [["再玩第三章", restart_game], ["回到首頁", return_to_title]], true)
+	elif chapter_index == 2:
 		var cloud_result := _l10n("月光蜂蜜鈴重新響起，棉花糖風暴平息了。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了雲朵森林冒險！", {"count": "%02d" % star_candies})
 		result_overlay = _create_overlay("月光蜂蜜鈴找回來了！", cloud_result, [["再玩第二章", restart_game], ["回到首頁", return_to_title]], true)
 	else:
@@ -2197,6 +2323,11 @@ func finish_level() -> void:
 func start_chapter_two() -> void:
 	get_tree().paused = false
 	get_tree().set_meta("snackisle_chapter", 2)
+	get_tree().reload_current_scene()
+
+func start_chapter_three() -> void:
+	get_tree().paused = false
+	get_tree().set_meta("snackisle_chapter", 3)
 	get_tree().reload_current_scene()
 
 

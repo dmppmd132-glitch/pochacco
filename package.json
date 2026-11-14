@@ -12,6 +12,7 @@
     "test": "godot --headless --editor --path . --import && godot --headless --audio-driver Dummy --path . --scene test/smoke_runner.tscn",
     "test:platform-route": "godot --headless --audio-driver Dummy --path . --script test/platform_route_contract.gd",
     "test:cloud-gust": "godot --headless --audio-driver Dummy --path . --script test/cloud_gust_contract.gd",
+    "test:chapter-three": "node --test test/chapter-three-contract.test.mjs",
     "test:responsive": "godot --headless --path . --script test/responsive_layout.gd",
     "test:audio": "node scripts/check-audio.mjs",
     "test:checks": "node --test test/godot-check.test.mjs test/exported-pack-profile.test.mjs test/loader-language.test.mjs",

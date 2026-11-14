@@ -127,6 +127,10 @@ func _build_title() -> void:
 	chapter_two_button.name = "StartChapterTwo"
 	chapter_two_button.pressed.connect(_start_chapter_two)
 	secondary_actions.add_child(chapter_two_button)
+	var chapter_three_button := _make_button("試玩第三章｜齒輪城", false)
+	chapter_three_button.name = "StartChapterThree"
+	chapter_three_button.pressed.connect(_start_chapter_three)
+	secondary_actions.add_child(chapter_three_button)
 	var wardrobe_button := _make_button("衣櫃換裝", false)
 	wardrobe_button.name = "WardrobeButton"
 	wardrobe_button.pressed.connect(_open_wardrobe)
@@ -232,20 +236,23 @@ func _layout_title() -> void:
 		start_button.custom_minimum_size = Vector2(200, 42) if compact else Vector2(220, 54)
 		start_button.add_theme_font_size_override("font_size", 18 if compact else 22)
 	var chapter_two_button := title_panel.find_child("StartChapterTwo", true, false) as Button
+	var chapter_three_button := title_panel.find_child("StartChapterThree", true, false) as Button
 	var wardrobe_button := title_panel.find_child("WardrobeButton", true, false) as Button
 	var secondary_actions := title_panel.find_child("SecondaryActions", true, false) as HBoxContainer
 	if secondary_actions != null:
 		var gap := 6 if compact else 8
 		secondary_actions.add_theme_constant_override("separation", gap)
 		var inner_width := title_panel.custom_minimum_size.x - (28.0 if compact else 44.0)
-		var button_width := clampf((inner_width - float(gap)) * 0.5, 122.0, 220.0)
-		for secondary_button in [chapter_two_button, wardrobe_button]:
+		var button_width := clampf((inner_width - float(gap * 2)) / 3.0, 112.0, 220.0)
+		for secondary_button in [chapter_two_button, chapter_three_button, wardrobe_button]:
 			if secondary_button == null:
 				continue
 			secondary_button.custom_minimum_size = Vector2(button_width, 42 if compact else 48)
 			secondary_button.add_theme_font_size_override("font_size", 12 if compact else 16)
 	if chapter_two_button != null:
 		chapter_two_button.text = _l10n("第二章") if compact else _l10n("體驗第二章｜雲朵森林")
+	if chapter_three_button != null:
+		chapter_three_button.text = _l10n("第三章") if compact else _l10n("試玩第三章｜齒輪城")
 	if wardrobe_button != null:
 		wardrobe_button.text = _l10n("衣櫃") if compact else _l10n("衣櫃換裝")
 
@@ -261,6 +268,11 @@ func _start_game() -> void:
 
 func _start_chapter_two() -> void:
 	get_tree().set_meta("snackisle_chapter", 2)
+	get_tree().change_scene_to_file("res://scenes/game.tscn")
+
+
+func _start_chapter_three() -> void:
+	get_tree().set_meta("snackisle_chapter", 3)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 
