@@ -59,6 +59,8 @@ jobs:
         run: |
           npm run test:platform-route
           npm run test:cloud-gust
+          npm run test:chapter-three
+          npm run test:dialogue
           npm run test:checks
       - name: Export standalone Web PWA
         run: npm run ci:export

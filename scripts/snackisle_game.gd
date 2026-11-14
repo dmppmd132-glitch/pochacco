@@ -35,6 +35,16 @@ const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
 const CHAPTER_THREE_CONTROLLER: Script = preload("res://scripts/chapter_three.gd")
 const WORLD_WIDTH := 5200.0
 const GROUND_Y := 620.0
+const BACKGROUND_REDRAW_INTERVAL := 1.0 / 30.0
+const STORY_DIALOGUE_EVENTS := [
+	{"chapter": 1, "id": "ch1_strawberry_trail", "trigger_x": 460.0, "condition": "", "lines": [{"speaker": "帕恰狗", "text": "我聞到草莓香氣，噴泉閥門一定就在前面！"}, {"speaker": "嘟嘟", "text": "你負責找線索，我會在前面替你開路！"}]},
+	{"chapter": 1, "id": "ch1_jam_bridge", "trigger_x": 3000.0, "condition": "plate_pressed", "lines": [{"speaker": "帕恰狗", "text": "我會留在踏板上，你去打開橋閘！"}, {"speaker": "嘟嘟", "text": "交給我！等我安全回來，再一起過橋。"}]},
+	{"chapter": 2, "id": "ch2_windmill", "trigger_x": 1540.0, "condition": "", "lines": [{"speaker": "帕恰狗", "text": "風車裡有鈴聲！我用香蕉迴旋鏢敲響它。"}, {"speaker": "嘟嘟", "text": "我來看住雲朵踏板，讓回來的路保持安全。"}]},
+	{"chapter": 2, "id": "ch2_cloud_bridge", "trigger_x": 3210.0, "condition": "plate_pressed", "lines": [{"speaker": "帕恰狗", "text": "踏板穩住了，雲橋可以通行！"}, {"speaker": "嘟嘟", "text": "好，我們一起去找月光蜂蜜鈴。"}]},
+	{"chapter": 3, "id": "ch3_gear_rhythm", "trigger_x": 700.0, "condition": "", "lines": [{"speaker": "嘟嘟", "text": "齒輪轉得好快，我怕踩錯節拍。"}, {"speaker": "帕恰狗", "text": "看箭頭、聽鈴聲；我嗅出停靠時機，再一起走！"}]},
+	{"chapter": 3, "id": "ch3_guardian", "trigger_x": 4180.0, "condition": "", "lines": [{"speaker": "帕恰狗", "text": "守衛外殼有黃銅卡榫，我會用迴旋鏢讓它卡住！"}, {"speaker": "嘟嘟", "text": "鐘芯露出時換我坐擊，我們輪流合作！"}]},
+	{"chapter": 3, "id": "ch3_core_restored", "trigger_x": 4740.0, "condition": "guardian_defeated", "lines": [{"speaker": "嘟嘟", "text": "鐘芯重新發亮了！點心島又有希望了。"}, {"speaker": "帕恰狗", "text": "這趟冒險是我們一起完成的！"}]},
+]
 const START_PLATFORM_TOP := 530.0
 const GRAVITY := 1450.0
 const DUDU_JUMP_SPEED := 560.0
@@ -78,6 +88,13 @@ var strawberry_ingredients := 0
 var checkpoint_x := 160.0
 var time_alive := 0.0
 var toast_time := 0.0
+var partner_greeting_cooldown := 0.0
+var _background_redraw_time := 0.0
+var _story_dialogue_lines: Array[Dictionary] = []
+var _story_dialogue_index := 0
+var _story_dialogue_time := 0.0
+var _story_dialogue_active := false
+var _story_dialogue_seen: Dictionary = {}
 var damage_cooldown := 0.0
 var clues_visible := false
 var clue_time := 0.0
@@ -234,7 +251,6 @@ class StarCandy extends Area2D:
 	func _process(delta: float) -> void:
 		phase += delta
 		position.y = base_y + sin(phase * 3.4) * 5.0
-		queue_redraw()
 
 	func _draw() -> void:
 		var points := PackedVector2Array()
@@ -271,7 +287,6 @@ class StrawberryFood extends Area2D:
 	func _process(delta: float) -> void:
 		phase += delta
 		position.y = base_y + sin(phase * 2.8) * 4.0
-		queue_redraw()
 
 	func _draw() -> void:
 		if kind == "cotton":
@@ -446,6 +461,7 @@ class Buddy extends CharacterBody2D:
 	var bounce_guard := 0.0
 	var steam_stun_time := 0.0
 	var floor_probe: RayCast2D
+	var ornament_redraw_time := 0.0
 
 	func jump_speed() -> float:
 		return game.POCHACCO_JUMP_SPEED if not is_dudu else game.DUDU_JUMP_SPEED
@@ -591,13 +607,14 @@ class Buddy extends CharacterBody2D:
 			active_pose = ""
 			game.resolve_ground_pound(self)
 		game.on_buddy_moved(self)
-		queue_redraw()
 
 	func _process(delta: float) -> void:
 		if sprite == null:
 			return
 		var moving := absf(velocity.x) > 38.0
-		sprite.flip_h = facing < 0.0
+		var should_flip := facing < 0.0
+		if sprite.flip_h != should_flip:
+			sprite.flip_h = should_flip
 		squash_time = maxf(0.0, squash_time - delta)
 		hurt_pose_time = maxf(0.0, hurt_pose_time - delta)
 		action_pose_time = maxf(0.0, action_pose_time - delta)
@@ -630,7 +647,9 @@ class Buddy extends CharacterBody2D:
 			frame_index = mini(frame_index, frames.size() - 1)
 		else:
 			frame_index %= frames.size()
-		sprite.texture = frames[frame_index]
+		var next_frame: Texture2D = frames[frame_index]
+		if sprite.texture != next_frame:
+			sprite.texture = next_frame
 		var squash := Vector2.ONE
 		if victory_pose:
 			sprite.rotation = 0.0
@@ -644,7 +663,10 @@ class Buddy extends CharacterBody2D:
 		if squash_time > 0.0 and not victory_pose:
 			squash *= Vector2(1.13, 0.74)
 		sprite.scale = Vector2.ONE * 0.17 * squash
-		queue_redraw()
+		ornament_redraw_time += delta
+		if ornament_redraw_time >= 0.1:
+			ornament_redraw_time = fmod(ornament_redraw_time, 0.1)
+			queue_redraw()
 
 	func _draw() -> void:
 		if is_dudu and is_on_floor() and absf(velocity.x) < 24.0 and fmod(anim_time, 5.2) > 4.2:
@@ -1312,8 +1334,14 @@ func consume_touch_jump() -> bool:
 func _clear_touch_input() -> void:
 	touch_move_axis = 0.0
 	touch_jump_pending = false
+	Input.action_release("jump")
 	if is_instance_valid(touch_joystick):
 		touch_joystick.reset()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_clear_touch_input()
 
 
 func _layout_hud() -> void:
@@ -1327,6 +1355,12 @@ func _layout_hud() -> void:
 		objective_label.offset_top = 13.0
 		objective_label.offset_bottom = 69.0
 		objective_label.add_theme_font_size_override("font_size", 14 if narrow else 17)
+	if is_instance_valid(toast_label):
+		toast_label.offset_left = 18.0 if narrow else 80.0
+		toast_label.offset_right = -18.0 if narrow else -80.0
+		toast_label.offset_top = 112.0 if narrow else 124.0
+		toast_label.offset_bottom = maxf(toast_label.offset_top + 44.0, minf(204.0, view_size.y - 12.0))
+		toast_label.add_theme_font_size_override("font_size", 14 if narrow else 20)
 	if touch_controls != null:
 		var touch := DisplayServer.is_touchscreen_available() or view_size.x < 900.0
 		touch_controls.visible = touch
@@ -1413,7 +1447,17 @@ func switch_character() -> void:
 	_update_controlled_state()
 	if camera != null:
 		camera.global_position.x = get_active_buddy().global_position.x
-	show_toast(_l10n("現在由{name}帶隊！", {"name": "嘟嘟" if active_is_dudu() else "帕恰狗"}))
+	var greeted := false
+	if partner_greeting_cooldown <= 0.0 and is_instance_valid(dudu) and is_instance_valid(pochacco) and dudu.global_position.distance_to(pochacco.global_position) <= 96.0:
+		partner_greeting_cooldown = 1.8
+		dudu.squash_time = 0.22
+		pochacco.squash_time = 0.22
+		spawn_burst((dudu.global_position + pochacco.global_position) * 0.5, Color("#ffe08a"))
+		greeted = true
+	if greeted:
+		show_toast("擊掌！嘟嘟和帕恰狗準備好一起出發！")
+	else:
+		show_toast(_l10n("現在由{name}帶隊！", {"name": "嘟嘟" if active_is_dudu() else "帕恰狗"}))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1809,8 +1853,76 @@ func on_gear_guardian_defeated(guardian) -> void:
 	show_toast("發條糖果守衛被擊敗！鐘芯平台閘門打開，觸碰星星糖鐘芯完成章節。")
 	_update_objective()
 
+func _story_dialogue_condition_met(condition: String) -> bool:
+	match condition:
+		"":
+			return true
+		"plate_pressed":
+			return plate_pressed
+		"guardian_defeated":
+			return is_instance_valid(chapter_three) and chapter_three.core_unlocked
+	return false
+
+
+func _try_start_story_dialogue(active) -> void:
+	if _story_dialogue_active or run_over or is_instance_valid(pause_overlay) or not is_instance_valid(active):
+		return
+	if not is_instance_valid(dudu) or not is_instance_valid(pochacco) or dudu.global_position.distance_to(pochacco.global_position) > 360.0:
+		return
+	for event in STORY_DIALOGUE_EVENTS:
+		if int(event.get("chapter", 0)) != chapter_index:
+			continue
+		var event_id := str(event.get("id", ""))
+		if event_id.is_empty() or _story_dialogue_seen.has(event_id):
+			continue
+		if absf(active.global_position.x - float(event.get("trigger_x", 0.0))) > 150.0:
+			continue
+		if not _story_dialogue_condition_met(str(event.get("condition", ""))):
+			continue
+		_story_dialogue_seen[event_id] = true
+		_story_dialogue_lines.clear()
+		for dialogue_line in event.get("lines", []):
+			if dialogue_line is Dictionary:
+				_story_dialogue_lines.append(dialogue_line)
+		_story_dialogue_index = 0
+		_story_dialogue_active = not _story_dialogue_lines.is_empty()
+		if _story_dialogue_active:
+			_show_story_dialogue_line()
+		return
+
+
+func _show_story_dialogue_line() -> void:
+	if not is_instance_valid(toast_label) or _story_dialogue_index >= _story_dialogue_lines.size():
+		_story_dialogue_active = false
+		return
+	var line: Dictionary = _story_dialogue_lines[_story_dialogue_index]
+	var speaker := str(line.get("speaker", "夥伴"))
+	var text := str(line.get("text", ""))
+	toast_label.text = "%s：「%s」" % [speaker, text]
+	toast_label.visible = true
+	toast_time = 0.0
+	_story_dialogue_time = clampf(1.4 + float(text.length()) * 0.04, 2.4, 4.0)
+	var speaker_buddy = dudu if speaker == "嘟嘟" else pochacco
+	if is_instance_valid(speaker_buddy):
+		speaker_buddy.squash_time = maxf(speaker_buddy.squash_time, 0.16)
+
+
+func _advance_story_dialogue(delta: float) -> void:
+	_story_dialogue_time -= delta
+	if _story_dialogue_time > 0.0:
+		return
+	_story_dialogue_index += 1
+	if _story_dialogue_index >= _story_dialogue_lines.size():
+		_story_dialogue_active = false
+		_story_dialogue_lines.clear()
+		if is_instance_valid(toast_label):
+			toast_label.visible = false
+		return
+	_show_story_dialogue_line()
+
+
 func show_toast(message: String) -> void:
-	if toast_label == null:
+	if toast_label == null or _story_dialogue_active:
 		return
 	toast_label.text = _l10n(message)
 	toast_time = 2.6
@@ -2083,6 +2195,7 @@ func _process(delta: float) -> void:
 	damage_cooldown = maxf(0.0, damage_cooldown - delta)
 	boss_contact_cooldown = maxf(0.0, boss_contact_cooldown - delta)
 	team_hug_time = maxf(0.0, team_hug_time - delta)
+	partner_greeting_cooldown = maxf(0.0, partner_greeting_cooldown - delta)
 	clue_time = maxf(0.0, clue_time - delta)
 	if clue_time <= 0.0:
 		clues_visible = false
@@ -2138,7 +2251,13 @@ func _process(delta: float) -> void:
 			show_toast("月光蜂蜜鈴被風靈守著！先用帕恰狗的香蕉鏢敲暈牠，再用嘟嘟坐擊鈴心。" if chapter_index == 2 else "噴泉閥門被奶油怪守著！先讓牠踩香蕉皮，引奶油怪踩中。")
 		elif chapter_index != 3 and boss_defeated and active.global_position.distance_to(Vector2(5000.0, GROUND_Y - 34.0)) < 75.0:
 			finish_level()
-	if toast_time > 0.0:
+	if _story_dialogue_active:
+		_advance_story_dialogue(delta)
+	else:
+		_try_start_story_dialogue(active)
+	if _story_dialogue_active:
+		pass
+	elif toast_time > 0.0:
 		toast_time -= delta
 		if toast_time <= 0.0 and is_instance_valid(toast_label):
 			toast_label.visible = false
@@ -2151,7 +2270,10 @@ func _process(delta: float) -> void:
 	if last_ui_refresh > 0.16:
 		last_ui_refresh = 0.0
 		_refresh_touch_labels()
-	queue_redraw()
+	_background_redraw_time += delta
+	if _background_redraw_time >= BACKGROUND_REDRAW_INTERVAL:
+		_background_redraw_time = fmod(_background_redraw_time, BACKGROUND_REDRAW_INTERVAL)
+		queue_redraw()
 
 
 func _draw() -> void:

@@ -16,7 +16,11 @@ iPhone／iPad 請以 Safari 開啟網址，選「分享」→「加入主畫面�
 
 三章皆有星星糖與章節食材可收集。標題頁衣櫃、服裝資料與購買／保存已接線；章節結算星星糖入帳及角色實際服裝外觀套用仍列於 [TODO.md](TODO.md)。
 
-第一章開場跳台路線已調整並加入 smoke regression：測試會實際從地面跳上戚風彈跳台、觸發彈跳、落到下一塊餅乾平台並拾取星星糖；第二章測試也會檢查側風作用區、推力及風歇窗口。`npm run test:chapter-three` 另驗收蒸汽噴口、守衛狀態機、Boss 音效路由、嘟嘟實際落地坐擊、打擊回饋與真實章末閘門／鐘芯通關流程；六組 Boss WAV 亦在隔離使用者資料目錄中通過音效完成測試。完整 `npm test` smoke suite 已通過。
+新增七組三章地標雙角色繁中短對話，對話不暫停遊戲、依角色／路線條件只觸發一次；靠近隊友切換角色可觸發有冷卻的擊掌反應。PWA 端補上觸控回歸驗收，確認搖桿主指標捕捉與失焦時釋放跳躍輸入，並調整窄螢幕對話字級／文字區。程式層級效能改善包含背景繪製節流至 30Hz、靜態收集品取消每幀重繪、角色裝飾層降至 10Hz；另將 2D Stretch Mode 改為 `viewport`。同源手機模擬 A/B 的畫格中位間隔由 100ms 降至 83.3ms，觸控後首個畫面回呼約改善 23–27%；這是軟體渲染器數據，不等同實體手機 FPS，詳見 [MOBILE_WEB_TEST.md](MOBILE_WEB_TEST.md)。
+
+第四章提案為「月潮玻璃海」，包含回音音序、折光鏡面、可選風險支線與三階段潮汐水母王；這是規劃文件，不代表第四章已有可玩實作，詳見 [CHAPTER_4_PLAN.md](CHAPTER_4_PLAN.md)。本輪互動、觸控與效能變更目前尚未同步至 GitHub Pages。
+
+第一章開場跳台路線已調整並加入 smoke regression：測試會實際從地面跳上戚風彈跳台、觸發彈跳、落到下一塊餅乾平台並拾取星星糖；第二章測試也會檢查側風作用區、推力及風歇窗口。`npm run test:chapter-three` 另驗收蒸汽噴口、守衛狀態機、Boss 音效路由、嘟嘟實際落地坐擊、打擊回饋與真實章末閘門／鐘芯通關流程；`npm run test:dialogue` 驗收三章地標對話、擊掌、觸控搖桿指標捕捉與失焦釋放。六組 Boss WAV 亦在隔離使用者資料目錄中通過音效完成測試。完整 `npm test` smoke suite 已通過。
 
 ## 操作
 
@@ -49,7 +53,7 @@ iPhone／iPad 請以 Safari 開啟網址，選「分享」→「加入主畫面�
 
 ## 專案與部署
 
-遊戲原始碼位於專案根目錄。GitHub Pages 部署 `github-pages/` 中的自包含 PWA（含 `index.wasm`、`index.pck`、manifest、Service Worker 與離線頁）；`.github/workflows/pages.yml` 會在 `main` 分支更新時，依 `assets.lock.json` 還原並驗證素材、安裝 Godot 4.7.2 與 Web 匯出模板、執行平台／陣風回歸測試、匯出及檢查 PWA，再同步並部署 GitHub Pages。也可從 Actions 頁面手動執行 workflow。Webdev 管理的 `site/` 是另一份預覽輸出，不是 GitHub Pages 的部署來源。
+遊戲原始碼位於專案根目錄。GitHub Pages 部署 `github-pages/` 中的自包含 PWA（含 `index.wasm`、`index.pck`、manifest、Service Worker 與離線頁）；`.github/workflows/pages.yml` 會在 `main` 分支更新時，依 `assets.lock.json` 還原並驗證素材、安裝 Godot 4.7.2 與 Web 匯出模板、執行平台／陣風／第三章 Boss／故事對話與來源契約測試、匯出及檢查 PWA，再同步並部署 GitHub Pages。也可從 Actions 頁面手動執行 workflow。Webdev 管理的 `site/` 是另一份預覽輸出，不是 GitHub Pages 的部署來源。
 
 更新遊戲並推送到 `main` 後，GitHub Actions 會自動完成建置與部署；本機也可用 `npm run ci:hydrate-assets` 還原鎖定素材、`npm run ci:export` 匯出 `dist/standalone/`，再用 `npm run pages:sync` 更新 Pages 目錄。同步腳本會排除本機 build fingerprint，並確認 PWA 包含 WASM/PCK 且沒有 Manus Storage 絕對路徑。
 
