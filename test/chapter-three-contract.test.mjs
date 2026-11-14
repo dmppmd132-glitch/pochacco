@@ -43,6 +43,26 @@ test('chapter three steam vents cycle and support sniff / pound interactions', (
   assert.match(result.stdout, /CHAPTER_THREE_MECHANICS_PASS/);
 });
 
+test('gear candy guardian alternates telegraphed attacks and needs three core stomps', () => {
+  const result = spawnSync('godot', ['--headless', '--audio-driver', 'Dummy', '--path', '.', '--script', 'test/gear_guardian_mechanics.gd'], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 45000,
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /GEAR_GUARDIAN_MECHANICS_PASS/);
+});
+
+test('gear guardian unblocks the real chapter-three core and touching it ends the run', () => {
+  const result = spawnSync('godot', ['--headless', '--audio-driver', 'Dummy', '--path', '.', '--script', 'test/gear_guardian_integration.gd'], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 45000,
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /GEAR_GUARDIAN_INTEGRATION_PASS/);
+});
+
 test('chapter three keeps the optional high-risk route and three-star bonus distinct', () => {
   const game = read('scripts/snackisle_game.gd');
   assert.match(game, /risk_entry\.set_meta\("route_id", "high_risk"\)/);

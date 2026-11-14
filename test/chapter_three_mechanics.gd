@@ -35,7 +35,7 @@ func _initialize() -> void:
 	chapter.setup(game)
 	_expect(chapter.steam_vents.size() == 3, "chapter builds three independent steam vents")
 	_expect(chapter.steam_hint(2970.0).contains("預熱"), "sniff hint reports the nearest vent phase")
-	chapter.on_ground_pound(2970.0)
+	chapter.on_ground_pound(Vector2(2970.0, 593.0), true)
 	_expect(chapter.steam_vents[0].is_safe_window(), "ground-pound dispatch suppresses the nearby valve")
 	_expect(game.last_toast.contains("2.4 秒"), "valve suppression reports its safe duration")
 	_expect(not chapter.suppress_vent_near(1000.0), "distant ground-pound does not suppress a valve")

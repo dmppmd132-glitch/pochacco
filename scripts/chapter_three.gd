@@ -2,11 +2,14 @@ extends Node2D
 class_name ChapterThreeController
 
 const STEAM_VENT_SCRIPT: Script = preload("res://scripts/steam_vent.gd")
+const GEAR_GUARDIAN_SCRIPT: Script = preload("res://scripts/gear_guardian.gd")
 
 var game
 var gears: Array[GearPlatform] = []
 var steam_vents: Array[Area2D] = []
+var guardian
 var bell_active := false
+var core_unlocked := false
 var core_restored := false
 var brake_count := 0
 
@@ -74,6 +77,7 @@ func setup(controller_game) -> void:
 	game = controller_game
 	_build_gears()
 	_build_steam_vents()
+	_build_guardian()
 	queue_redraw()
 
 
@@ -91,6 +95,16 @@ func _build_steam_vents() -> void:
 		add_child(vent)
 		steam_vents.append(vent)
 
+
+func _build_guardian() -> void:
+	guardian = GEAR_GUARDIAN_SCRIPT.new()
+	guardian.name = "GearCandyGuardian"
+	add_child(guardian)
+	guardian.setup(game, Vector2(4460.0, game.GROUND_Y - 54.0))
+
+func activate_guardian() -> void:
+	if is_instance_valid(guardian):
+		guardian.activate()
 
 func steam_hint(at_x: float) -> String:
 	var nearest: Area2D
@@ -163,19 +177,28 @@ func brake_near(at_x: float) -> bool:
 	game._update_objective()
 	return true
 
-func on_boomerang_hit(at_x: float) -> void:
+func on_boomerang_hit(at_position: Vector2) -> bool:
+	if is_instance_valid(guardian) and guardian.on_boomerang_hit(at_position):
+		return true
+	var at_x := at_position.x
 	if at_x > 1030.0 and at_x < 1160.0:
-		reverse_near(1090.0)
-	elif at_x > 2580.0 and at_x < 2760.0:
-		reverse_near(2670.0)
+		return reverse_near(1090.0)
+	if at_x > 2580.0 and at_x < 2760.0:
+		return reverse_near(2670.0)
+	return false
 
-func on_ground_pound(at_x: float) -> void:
-	if suppress_vent_near(at_x):
-		return
-	if at_x > 980.0 and at_x < 1200.0:
+func on_ground_pound(at_position: Vector2, is_dudu: bool) -> bool:
+	if is_instance_valid(guardian) and absf(at_position.x - guardian.global_position.x) < 150.0:
+		return guardian.on_ground_pound(at_position, is_dudu)
+	if suppress_vent_near(at_position.x):
+		return true
+	if at_position.x > 980.0 and at_position.x < 1200.0:
 		brake_near(1090.0)
-	elif at_x > 2500.0 and at_x < 2800.0:
+		return true
+	if at_position.x > 2500.0 and at_position.x < 2800.0:
 		brake_near(2670.0)
+		return true
+	return false
 
 func _nearest_gear(at_x: float) -> GearPlatform:
 	var nearest: GearPlatform
@@ -188,8 +211,10 @@ func _nearest_gear(at_x: float) -> GearPlatform:
 	return nearest
 
 func mark_core_restored() -> void:
+	if not core_unlocked or core_restored:
+		return
 	core_restored = true
-	game.show_toast("星星糖鐘芯重新啟動！糖霜齒輪城恢復了節拍。")
+	game.show_toast("觸碰星星糖鐘芯！糖霜齒輪城恢復了節拍。")
 	game._update_objective()
 	queue_redraw()
 

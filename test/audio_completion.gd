@@ -19,7 +19,7 @@ func _run() -> void:
 	var catalog = load("res://scripts/audio_catalog.gd")
 	var bank: Dictionary[StringName, AudioStream] = {}
 	for cue in catalog.CUE_PATHS:
-		var stream := load(catalog.CUE_PATHS[cue]) as AudioStreamOggVorbis
+		var stream := load(catalog.CUE_PATHS[cue]) as AudioStream
 		_check(stream != null and stream.get_length() > 0.1, "final cue loads: " + str(cue))
 		bank[cue] = stream
 	var bgm := load(catalog.BGM_PATH) as AudioStreamOggVorbis
@@ -81,7 +81,7 @@ func _run() -> void:
 	for frame in 120: audio._process(1.0 / 60.0)
 	_check(is_equal_approx(audio.music.volume_db, audio.MUSIC_GAIN_DB), "short fade settles at reference level")
 	_check(audio.music_starts == starts, "fade never restarts music")
-	for cue in [&"jump", &"land", &"attack", &"coin", &"stomp", &"checkpoint", &"stage_clear", &"invalid", &"tutorial", &"death", &"success"]:
+	for cue in [&"jump", &"land", &"attack", &"coin", &"stomp", &"checkpoint", &"stage_clear", &"invalid", &"tutorial", &"death", &"success", &"boss_warning", &"boss_ripple", &"boss_pendulum", &"boss_latch", &"boss_core_hit", &"boss_defeat"]:
 		audio.play(cue)
 		_check(audio.get_play_count(cue) > 0, "game event semantic cue: " + str(cue))
 	_check(audio.get_child_count() == 1 + audio.MAX_SFX_VOICES, "all semantic cues share bounded voices")

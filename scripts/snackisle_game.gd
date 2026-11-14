@@ -87,6 +87,10 @@ var plate_pressed := false
 var plate_hint_sent := false
 var boss_defeated := false
 var boss_exposed_time := 0.0
+var boss_hitstop_time := 0.0
+var boss_shake_time := 0.0
+var boss_shake_duration := 0.0
+var boss_shake_strength := 0.0
 var boss_x := 4250.0
 var boss_contact_cooldown := 0.0
 var banana_peel_placed := false
@@ -482,6 +486,8 @@ class Buddy extends CharacterBody2D:
 	func _physics_process(delta: float) -> void:
 		if game == null or game.run_over:
 			return
+		if game.is_boss_hitstop_active():
+			return
 		anim_time += delta
 		roll_time = maxf(0.0, roll_time - delta)
 		landing_lock = maxf(0.0, landing_lock - delta)
@@ -540,12 +546,11 @@ class Buddy extends CharacterBody2D:
 				var collider: Object = hit.get_collider()
 				if collider is Node and collider.is_in_group("trampoline"):
 					landed_on_trampoline = true
-				break
-				if ground_pounding:
-					ground_pounding = false
-					pound_recovery_time = 0.28
-					active_pose = ""
-					game.resolve_ground_pound(self)
+			if ground_pounding:
+				ground_pounding = false
+				pound_recovery_time = 0.28
+				active_pose = ""
+				game.resolve_ground_pound(self)
 			if landed_on_trampoline and bounce_guard <= 0.0:
 				velocity.y = -690.0
 				bounce_guard = 0.3
@@ -870,6 +875,7 @@ func _build_gear_world() -> void:
 	_add_platform(3740, 300, 210, 24, "biscuit")
 	var route_merge = _add_platform(3820, 535, 280, 24, "wafer")
 	route_merge.set_meta("route_id", "merge")
+	boss_gate = _add_barrier(4660.0, 545.0, Vector2(42.0, 150.0), "gear_boss_gate")
 	chapter_three = CHAPTER_THREE_CONTROLLER.new()
 	chapter_three.name = "ChapterThreeGearController"
 	chapter_three.game = self
@@ -1514,7 +1520,7 @@ func open_guide() -> void:
 	_clear_touch_input()
 	get_tree().paused = true
 	var controls := "A 跳躍；B 嘟嘟滾滾／帕恰狗香蕉迴旋鏢；X 嘟嘟屁屁坐擊／帕恰狗偵探嗅嗅；Y 集合抱抱；L 切換角色。手機也可在右上角色頭像區快速雙擊或左右滑動切換。R 是嘟嘟攻略、帕恰狗香蕉皮。靠近合作機關時，畫面會顯示情境提示。"
-	var chapter_guide := "第一章：先嗅出巧克力牆腳印，再讓嘟嘟滾撞；果醬河由帕恰狗踩踏板、嘟嘟撞開橋頭；Boss 踩香蕉皮滑倒後再坐擊核心。" if chapter_index == 1 else ("第二章：用迴旋鏢敲響風車鈴開雲門；帕恰狗踩住雲朵踏板，嘟嘟滾破橋閘；Boss 露出鈴心後再坐擊。" if chapter_index == 2 else "第三章：帕恰狗按 X 嗅出齒輪節拍，按 B 敲鈴換向；嘟嘟在煞車踏板按 X 停住齒輪 5 秒，趁停靠記號跳過工坊與鐘樓外環。")
+	var chapter_guide := "第一章：先嗅出巧克力牆腳印，再讓嘟嘟滾撞；果醬河由帕恰狗踩踏板、嘟嘟撞開橋頭；Boss 踩香蕉皮滑倒後再坐擊核心。" if chapter_index == 1 else ("第二章：用迴旋鏢敲響風車鈴開雲門；帕恰狗踩住雲朵踏板，嘟嘟滾破橋閘；Boss 露出鈴心後再坐擊。" if chapter_index == 2 else "第三章：帕恰狗嗅出齒輪節拍、迴旋鏢敲鈴換向；嘟嘟坐擊停住齒輪。鐘樓外環跳躍躲波紋、站外側避擺錘；帕恰狗敲守衛卡榫後，嘟嘟連續三次坐擊鐘芯，最後觸碰星星糖鐘芯通關。")
 	pause_overlay = _create_overlay("攻略說明", controls + "\n\n" + chapter_guide, [["繼續遊玩", resume_game]], false)
 
 
@@ -1709,7 +1715,7 @@ func drop_banana_peel(buddy: Buddy) -> void:
 func check_boomerang_hit(shot: BananaBoomerang) -> void:
 	if chapter_index == 3:
 		if is_instance_valid(chapter_three):
-			chapter_three.on_boomerang_hit(shot.global_position.x)
+			chapter_three.on_boomerang_hit(shot.global_position)
 		return
 	if chapter_index == 2:
 		if not cloud_windmill_active and shot.global_position.distance_to(Vector2(cloud_windmill_x, GROUND_Y - 120.0)) < 52.0:
@@ -1740,7 +1746,7 @@ func resolve_ground_pound(buddy: Buddy) -> void:
 	spawn_burst(buddy.global_position + Vector2(0, 24), Color("#f08ca6"))
 	if chapter_index == 3:
 		if is_instance_valid(chapter_three):
-			chapter_three.on_ground_pound(buddy.global_position.x)
+			chapter_three.on_ground_pound(buddy.global_position, buddy.is_dudu)
 		return
 	if is_instance_valid(hearts_view):
 		pass
@@ -1758,6 +1764,50 @@ func resolve_ground_pound(buddy: Buddy) -> void:
 		show_toast("粉紅震波炸開！核心露出時，再從高處坐擊奶油怪。")
 	queue_redraw()
 
+
+func guardian_ripple_contact(guardian, previous_radius: float, current_radius: float) -> void:
+	for buddy in [dudu, pochacco]:
+		if not is_instance_valid(buddy) or not buddy.is_on_floor():
+			continue
+		var horizontal_gap := absf(buddy.global_position.x - guardian.global_position.x)
+		if horizontal_gap + 19.0 >= previous_radius and horizontal_gap - 19.0 <= current_radius:
+			if guardian.claim_attack_hit(buddy):
+				damage_source("齒輪波紋沿地面擴散！跳起來就能躲開。", buddy.global_position)
+
+func guardian_pendulum_contact(guardian, pendulum_position: Vector2) -> void:
+	for buddy in [dudu, pochacco]:
+		if not is_instance_valid(buddy):
+			continue
+		if buddy.global_position.distance_to(pendulum_position) <= 48.0 and guardian.claim_attack_hit(buddy):
+			damage_source("慢速擺錘掃過來了！觀察擺動節奏，站到左右外側安全位置。", buddy.global_position)
+
+func on_gear_guardian_state_changed(guardian, _new_state: int) -> void:
+	match guardian.state_name():
+		"TELEGRAPH_RIPPLE":
+			show_toast("守衛蓄力！齒輪波紋將沿地面擴散，跳躍即可躲避。")
+		"TELEGRAPH_PENDULUM":
+			show_toast("慢速擺錘開始預告！看清左右擺動，外側留有安全站位。")
+		"STUNNED":
+			show_toast("帕恰狗敲中黃銅卡榫！守衛卡住 3.5 秒，立刻換嘟嘟坐擊露出的鐘芯。")
+	_update_objective()
+
+func on_gear_guardian_pound_missed(_guardian) -> void:
+	show_toast("核心還沒露出來！先讓帕恰狗的香蕉迴旋鏢敲中守衛外殼卡榫。")
+
+func on_gear_guardian_core_hit(_guardian, hit_count: int, hit_limit: int) -> void:
+	show_toast("鐘芯有效命中 " + str(hit_count) + "/" + str(hit_limit) + "！守衛復原並改變下一輪攻擊節奏。")
+	_update_objective()
+
+func on_gear_guardian_defeated(guardian) -> void:
+	if not is_instance_valid(chapter_three) or guardian != chapter_three.guardian:
+		return
+	chapter_three.core_unlocked = true
+	if is_instance_valid(boss_gate):
+		boss_gate.queue_free()
+		boss_gate = null
+	spawn_burst(guardian.finish_core_position(), Color("#ffe37b"))
+	show_toast("發條糖果守衛被擊敗！鐘芯平台閘門打開，觸碰星星糖鐘芯完成章節。")
+	_update_objective()
 
 func show_toast(message: String) -> void:
 	if toast_label == null:
@@ -1818,7 +1868,16 @@ func _update_objective() -> void:
 		return
 	if chapter_index == 3:
 		if is_instance_valid(chapter_three) and chapter_three.core_restored:
-			objective_label.text = _l10n("星星糖鐘芯已啟動！走到鐘樓出口完成第三章。")
+			objective_label.text = _l10n("星星糖鐘芯已啟動！糖霜齒輪城恢復了節拍。")
+		elif is_instance_valid(chapter_three) and chapter_three.core_unlocked:
+			objective_label.text = _l10n("守衛已擊敗！越過已開啟的閘門，觸碰星星糖鐘芯完成章節。")
+		elif is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian) and chapter_three.guardian.state_name() == "STUNNED":
+			var guardian = chapter_three.guardian
+			objective_label.text = _l10n("守衛卡住了！切換嘟嘟，對露出的鐘芯屁屁坐擊（{hits}/{total}）。", {"hits": str(guardian.core_hits), "total": str(guardian.REQUIRED_CORE_HITS)})
+		elif is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian) and chapter_three.guardian.state_name() == "CORE_EXPOSED":
+			objective_label.text = _l10n("核心受擊！守衛正改變攻擊節奏；等帕恰狗再次敲中黃銅卡榫。")
+		elif is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian) and chapter_three.guardian.activated:
+			objective_label.text = _l10n("跳躍躲開齒輪波紋；擺錘預告時站到外側。帕恰狗敲卡榫後，換嘟嘟坐擊核心。")
 		elif is_instance_valid(chapter_three) and chapter_three.brake_count > 0:
 			objective_label.text = _l10n("齒輪暫停了！趁 5 秒安全窗口越過發條工坊。")
 		elif clues_visible:
@@ -1989,9 +2048,37 @@ func on_buddy_moved_checkpoint_check() -> void:
 		show_toast("吊橋另一端安全！接著對付哼哼奶油怪。")
 
 
+func play_boss_cue(cue: StringName) -> void:
+	var audio := get_node_or_null("/root/GameAudio")
+	if is_instance_valid(audio) and audio.has_method("play"):
+		audio.call("play", cue)
+
+func boss_impact_feedback(shake_strength: float, shake_seconds: float, hitstop_seconds: float) -> void:
+	if boss_shake_time <= 0.0:
+		boss_shake_strength = shake_strength
+		boss_shake_duration = shake_seconds
+	else:
+		boss_shake_strength = maxf(boss_shake_strength, shake_strength)
+		boss_shake_duration = maxf(boss_shake_duration, shake_seconds)
+	boss_shake_time = maxf(boss_shake_time, shake_seconds)
+	boss_hitstop_time = maxf(boss_hitstop_time, hitstop_seconds)
+
+func is_boss_hitstop_active() -> bool:
+	return boss_hitstop_time > 0.0
+
+
 func _process(delta: float) -> void:
 	if run_over or get_tree().paused:
 		return
+	boss_hitstop_time = maxf(0.0, boss_hitstop_time - delta)
+	boss_shake_time = maxf(0.0, boss_shake_time - delta)
+	if is_instance_valid(camera):
+		if boss_shake_time > 0.0:
+			var intensity := boss_shake_strength * clampf(boss_shake_time / maxf(boss_shake_duration, 0.001), 0.0, 1.0)
+			var phase := float(Time.get_ticks_msec()) * 0.12
+			camera.offset = Vector2(sin(phase * 1.13) * intensity, cos(phase * 1.57) * intensity * 0.72)
+		else:
+			camera.offset = Vector2.ZERO
 	time_alive += delta
 	damage_cooldown = maxf(0.0, damage_cooldown - delta)
 	boss_contact_cooldown = maxf(0.0, boss_contact_cooldown - delta)
@@ -2041,12 +2128,14 @@ func _process(delta: float) -> void:
 			var desired := Vector2(desired_x, 360.0)
 			camera.global_position = camera.global_position.lerp(desired, 1.0 - exp(-delta * 6.5))
 		on_buddy_moved_checkpoint_check()
-		if chapter_index == 3 and active.global_position.x >= 4480.0 and is_instance_valid(chapter_three) and not chapter_three.core_restored:
-			chapter_three.mark_core_restored()
+		if chapter_index == 3 and is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian):
+			if active.global_position.x >= 4310.0:
+				chapter_three.activate_guardian()
+			if chapter_three.core_unlocked and active.global_position.distance_to(chapter_three.guardian.finish_core_position()) < 82.0:
+				chapter_three.mark_core_restored()
+				finish_level()
 		elif chapter_index != 3 and not boss_defeated and active.global_position.x >= 4960.0:
 			show_toast("月光蜂蜜鈴被風靈守著！先用帕恰狗的香蕉鏢敲暈牠，再用嘟嘟坐擊鈴心。" if chapter_index == 2 else "噴泉閥門被奶油怪守著！先讓牠踩香蕉皮，引奶油怪踩中。")
-		elif chapter_index == 3 and is_instance_valid(chapter_three) and chapter_three.core_restored and active.global_position.x >= 4920.0:
-			finish_level()
 		elif chapter_index != 3 and boss_defeated and active.global_position.distance_to(Vector2(5000.0, GROUND_Y - 34.0)) < 75.0:
 			finish_level()
 	if toast_time > 0.0:
