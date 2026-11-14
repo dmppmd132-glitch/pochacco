@@ -100,6 +100,12 @@ var touch_buttons: Dictionary = {}
 var touch_move_axis := 0.0
 var touch_jump_pending := false
 var last_ui_refresh := 0.0
+var buddy_gesture_badge: Control
+var _buddy_gesture_pointer := -1
+var _buddy_gesture_origin := Vector2.ZERO
+var _buddy_gesture_started_msec := 0
+var _buddy_gesture_swiped := false
+var _last_buddy_tap_msec := -1000
 
 
 class PastryPlatform extends StaticBody2D:
@@ -571,6 +577,7 @@ class Buddy extends CharacterBody2D:
 			ground_pounding = false
 			pound_recovery_time = 0.28
 			active_pose = ""
+			game.resolve_ground_pound(self)
 		game.on_buddy_moved(self)
 		queue_redraw()
 
@@ -1037,6 +1044,7 @@ func build_hud() -> void:
 	toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_root.add_child(toast_label)
 	_build_touch_controls()
+	_build_buddy_gesture_badge()
 	get_viewport().size_changed.connect(_layout_hud)
 	_layout_hud()
 
@@ -1182,6 +1190,38 @@ func _build_touch_controls() -> void:
 	_layout_hud()
 
 
+func _build_buddy_gesture_badge() -> void:
+	buddy_gesture_badge = Control.new()
+	buddy_gesture_badge.name = "BuddyGestureBadge"
+	buddy_gesture_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	buddy_gesture_badge.offset_left = -112.0
+	buddy_gesture_badge.offset_right = -12.0
+	buddy_gesture_badge.offset_top = 60.0
+	buddy_gesture_badge.offset_bottom = 122.0
+	buddy_gesture_badge.custom_minimum_size = Vector2(100.0, 62.0)
+	buddy_gesture_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buddy_gesture_badge.tooltip_text = "角色頭像區快速雙擊或左右滑動可切換角色；也可使用 L 按鈕。"
+	buddy_gesture_badge.draw.connect(_draw_buddy_gesture_badge)
+	hud_root.add_child(buddy_gesture_badge)
+
+
+func _draw_buddy_gesture_badge() -> void:
+	if not is_instance_valid(buddy_gesture_badge):
+		return
+	var badge := buddy_gesture_badge
+	var panel := Rect2(Vector2.ZERO, badge.size)
+	badge.draw_rect(panel, Color(1.0, 0.976, 0.89, 0.9), true)
+	badge.draw_rect(panel, Color("#d39a87"), false, 2.0)
+	for index in 2:
+		var texture: Texture2D = DUDU_TEXTURE if index == 0 else POCHACCO_TEXTURE
+		var portrait := Rect2(Vector2(4.0 + index * 50.0, 4.0), Vector2(42.0, 42.0))
+		badge.draw_rect(portrait, Color("#fff8ec"), true)
+		badge.draw_texture_rect(texture, portrait.grow(-3.0), false)
+		var selected := active_is_dudu() == (index == 0)
+		badge.draw_rect(portrait, Color("#7aaf8e") if selected else Color("#cbb6a7"), false, 3.0 if selected else 1.5)
+	badge.draw_string(GAME_FONT, Vector2(badge.size.x * 0.5, 60.0), "雙擊／滑動", HORIZONTAL_ALIGNMENT_CENTER, -1.0, 10, Color("#754957"))
+
+
 func _hold_action(button: Button, action: String) -> void:
 	button.button_down.connect(func(): Input.action_press(action))
 	button.button_up.connect(func(): Input.action_release(action))
@@ -1227,6 +1267,8 @@ func _layout_hud() -> void:
 	if touch_controls != null:
 		var touch := DisplayServer.is_touchscreen_available() or view_size.x < 900.0
 		touch_controls.visible = touch
+		if is_instance_valid(buddy_gesture_badge):
+			buddy_gesture_badge.visible = touch
 		var button_size := 42.0 if view_size.x < 400.0 else (54.0 if view_size.x < 850.0 else 68.0)
 		var stick_size := clampf(button_size * 2.45, 112.0, 156.0)
 		touch_joystick.offset_left = 12.0
@@ -1284,6 +1326,8 @@ func _update_controlled_state() -> void:
 	if is_instance_valid(pochacco):
 		pochacco.controlled = not active_is_dudu()
 	_refresh_touch_labels()
+	if is_instance_valid(buddy_gesture_badge):
+		buddy_gesture_badge.queue_redraw()
 	_update_objective()
 
 
@@ -1310,6 +1354,39 @@ func switch_character() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.pressed:
+			if _buddy_gesture_pointer < 0 and is_instance_valid(buddy_gesture_badge) and buddy_gesture_badge.visible and buddy_gesture_badge.get_global_rect().has_point(touch.position):
+				_buddy_gesture_pointer = touch.index
+				_buddy_gesture_origin = touch.position
+				_buddy_gesture_started_msec = Time.get_ticks_msec()
+				_buddy_gesture_swiped = false
+				get_viewport().set_input_as_handled()
+		elif touch.index == _buddy_gesture_pointer:
+			if not _buddy_gesture_swiped and not run_over and not is_instance_valid(pause_overlay):
+				var now := Time.get_ticks_msec()
+				var tap_delta := touch.position - _buddy_gesture_origin
+				if tap_delta.length() <= 22.0 and now - _buddy_gesture_started_msec <= 450:
+					if now - _last_buddy_tap_msec <= 380:
+						_last_buddy_tap_msec = -1000
+						switch_character()
+					else:
+						_last_buddy_tap_msec = now
+			get_viewport().set_input_as_handled()
+			_buddy_gesture_pointer = -1
+			_buddy_gesture_swiped = false
+		return
+	if event is InputEventScreenDrag and (event as InputEventScreenDrag).index == _buddy_gesture_pointer:
+		var drag := event as InputEventScreenDrag
+		var delta := drag.position - _buddy_gesture_origin
+		if not _buddy_gesture_swiped and absf(delta.x) >= 28.0 and absf(delta.x) > absf(delta.y) * 1.25:
+			_buddy_gesture_swiped = true
+			_last_buddy_tap_msec = -1000
+			if not run_over and not is_instance_valid(pause_overlay):
+				switch_character()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.echo:
 		return
 	if event.is_action_pressed("switch_character"):
@@ -1379,7 +1456,7 @@ func open_guide() -> void:
 		return
 	_clear_touch_input()
 	get_tree().paused = true
-	var controls := "A 跳躍；B 嘟嘟滾滾／帕恰狗香蕉迴旋鏢；X 嘟嘟屁屁坐擊／帕恰狗偵探嗅嗅；Y 集合抱抱；L 切換角色。R 是嘟嘟攻略、帕恰狗香蕉皮。"
+	var controls := "A 跳躍；B 嘟嘟滾滾／帕恰狗香蕉迴旋鏢；X 嘟嘟屁屁坐擊／帕恰狗偵探嗅嗅；Y 集合抱抱；L 切換角色。手機也可在右上角色頭像區快速雙擊或左右滑動切換。R 是嘟嘟攻略、帕恰狗香蕉皮。靠近合作機關時，畫面會顯示情境提示。"
 	var chapter_guide := "第一章：先嗅出巧克力牆腳印，再讓嘟嘟滾撞；果醬河由帕恰狗踩踏板、嘟嘟撞開橋頭；Boss 踩香蕉皮滑倒後再坐擊核心。" if chapter_index == 1 else "第二章：用迴旋鏢敲響風車鈴開雲門；帕恰狗踩住雲朵踏板，嘟嘟滾破橋閘；Boss 露出鈴心後再坐擊。"
 	pause_overlay = _create_overlay("攻略說明", controls + "\n\n" + chapter_guide, [["繼續遊玩", resume_game]], false)
 
@@ -1615,6 +1692,40 @@ func show_toast(message: String) -> void:
 	toast_label.visible = true
 
 
+func _contextual_coop_hint() -> String:
+	var active = get_active_buddy()
+	if not is_instance_valid(active):
+		return ""
+	var x: float = active.global_position.x
+	if chapter_index == 1:
+		if not team_weight_activated and is_instance_valid(team_gate) and absf(x - 860.0) <= 250.0:
+			return "合作機關：嘟嘟靠近大福墊後按 Y 集合抱抱。" if active_is_dudu() else "合作機關：切回嘟嘟，靠近大福墊按 Y 集合抱抱。"
+		if team_weight_activated and not clues_visible and absf(x - 1560.0) <= 260.0:
+			return "合作解謎：切換帕恰狗按 X 嗅出腳印，再讓嘟嘟撞開牆。" if active_is_dudu() else "合作解謎：帕恰狗按 X 偵探嗅嗅找出腳印。"
+		if clues_visible and absf(x - 1560.0) <= 250.0:
+			return "線索已找到：切回嘟嘟，用 B 滾滾衝刺撞開巧克力牆。" if active_is_dudu() else "線索已找到：切回嘟嘟，用 B 撞開巧克力牆。"
+		if not plate_pressed and absf(x - plate_x) <= 250.0:
+			return "合作過橋：切換帕恰狗，讓她留在果醬踏板上。" if active_is_dudu() else "合作過橋：帕恰狗站上果醬踏板，讓嘟嘟能破閘。"
+		if plate_pressed and is_instance_valid(bridge_cookie) and absf(x - bridge_cookie.global_position.x) <= 250.0:
+			return "合作過橋：帕恰狗留在踏板，嘟嘟按 B 滾破夾心餅乾閘。" if active_is_dudu() else "合作過橋：保持踩住踏板，或切回嘟嘟破開橋閘。"
+		if not boss_defeated and absf(x - boss_x) <= 320.0:
+			if banana_peel_placed or boss_exposed_time > 0.0:
+				return "合作攻王：切回嘟嘟，在奶油怪露出核心時按 X 坐擊。" if active_is_dudu() else "合作攻王：香蕉皮已就位，切回嘟嘟按 X 坐擊核心。"
+			return "合作攻王：切換帕恰狗按 R 放香蕉皮，引奶油怪踩中。" if active_is_dudu() else "合作攻王：帕恰狗按 R 放香蕉皮，再讓嘟嘟坐擊核心。"
+	else:
+		if not cloud_windmill_active and absf(x - cloud_windmill_x) <= 300.0:
+			return "合作解謎：切換帕恰狗，用 B 迴旋鏢敲響雲朵風車。" if active_is_dudu() else "合作解謎：帕恰狗用 B 迴旋鏢敲響風車。"
+		if not plate_pressed and cloud_windmill_active and absf(x - plate_x) <= 250.0:
+			return "合作過橋：切換帕恰狗，讓她留在雲朵踏板上。" if active_is_dudu() else "合作過橋：帕恰狗踩住雲朵踏板，再換嘟嘟破閘。"
+		if plate_pressed and is_instance_valid(bridge_cookie) and absf(x - bridge_cookie.global_position.x) <= 250.0:
+			return "合作過橋：帕恰狗留在踏板，嘟嘟按 B 滾破雲餅橋閘。" if active_is_dudu() else "合作過橋：保持踩住雲朵踏板，或切回嘟嘟破閘。"
+		if not boss_defeated and absf(x - boss_x) <= 320.0:
+			if boss_exposed_time > 0.0:
+				return "合作攻王：切回嘟嘟，從高處按 X 坐擊露出的鈴心。" if active_is_dudu() else "合作攻王：風靈暈眩中，切回嘟嘟按 X 坐擊鈴心。"
+			return "合作攻王：切換帕恰狗，用 B 迴旋鏢敲暈風靈。" if active_is_dudu() else "合作攻王：帕恰狗按 B 敲暈風靈，再換嘟嘟坐擊。"
+	return ""
+
+
 func _update_objective() -> void:
 	if objective_label == null:
 		return
@@ -1802,6 +1913,11 @@ func _process(delta: float) -> void:
 		toast_time -= delta
 		if toast_time <= 0.0 and is_instance_valid(toast_label):
 			toast_label.visible = false
+	else:
+		var coop_hint := _contextual_coop_hint()
+		if is_instance_valid(toast_label) and toast_label.text != _l10n(coop_hint):
+			toast_label.text = _l10n(coop_hint)
+			toast_label.visible = not coop_hint.is_empty()
 	last_ui_refresh += delta
 	if last_ui_refresh > 0.16:
 		last_ui_refresh = 0.0

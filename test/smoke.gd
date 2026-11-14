@@ -1,25 +1,25 @@
-extends SceneTree
+extends Node
 
 const TITLE_SCENE := preload("res://scenes/title_screen.tscn")
 const GAME_SCENE := preload("res://scenes/game.tscn")
 var failures: Array[String] = []
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	_run.call_deferred()
 
 
 func _run() -> void:
-	root.size = Vector2i(1280, 720)
+	get_tree().root.size = Vector2i(1280, 720)
 	for _frame in 3:
-		await process_frame
-	var i18n := root.get_node_or_null("I18n")
+		await get_tree().process_frame
+	var i18n := get_tree().root.get_node_or_null("I18n")
 	_check(i18n != null and i18n.get_locale() == "zh-TW", "game locale is pinned to Traditional Chinese")
 	var title := TITLE_SCENE.instantiate()
-	root.add_child(title)
-	current_scene = title
+	get_tree().root.add_child(title)
+	get_tree().current_scene = title
 	for _frame in 3:
-		await process_frame
+		await get_tree().process_frame
 	var start_button: Button = title.find_child("StartAdventure", true, false)
 	var chapter_two_button: Button = title.find_child("StartChapterTwo", true, false)
 	var wardrobe_button: Button = title.find_child("WardrobeButton", true, false)
@@ -32,22 +32,22 @@ func _run() -> void:
 	if wardrobe_button != null:
 		wardrobe_button.pressed.emit()
 		for _wardrobe_open_frame in 3:
-			await process_frame
+			await get_tree().process_frame
 		var wardrobe := title.find_child("WardrobeScreen", true, false)
-		_check(wardrobe != null and paused, "wardrobe opens as a pause-owning modal")
+		_check(wardrobe != null and get_tree().paused, "wardrobe opens as a pause-owning modal")
 		if wardrobe != null:
 			_check(wardrobe.find_child("CostumeList", true, false) != null, "wardrobe shows the costume catalog")
 			wardrobe.close_panel()
 			for _wardrobe_close_frame in 2:
-				await process_frame
-		_check(not paused, "closing the wardrobe restores the previous pause state")
+				await get_tree().process_frame
+		_check(not get_tree().paused, "closing the wardrobe restores the previous pause state")
 	if start_button == null:
 		_finish()
 		return
 	start_button.pressed.emit()
 	for _frame in 8:
-		await process_frame
-	var game := current_scene
+		await get_tree().process_frame
+	var game := get_tree().current_scene
 	var game_script: Script = game.get_script() if game != null else null
 	_check(game_script != null and game_script.resource_path == "res://scripts/snackisle_game.gd", "active scene runs the new Strawberry Cake Village script")
 	_check(game != null and game.scene_file_path == "res://scenes/game.tscn", "start button enters Strawberry Cake Village")
@@ -60,21 +60,21 @@ func _run() -> void:
 	var dudu_jump_apex: float = dudu_jump_speed * dudu_jump_speed / (2.0 * float(game_constants["GRAVITY"]))
 	_check(dudu_jump_apex >= opening_platform_rise + 16.0, "Dudu cannot reach the first chiffon platform with safe clearance")
 	for _frame in 3:
-		await process_frame
+		await get_tree().process_frame
 	game.dudu.global_position = Vector2(420.0, game.GROUND_Y - 27.0)
 	game.dudu.velocity = Vector2.ZERO
 	game.pochacco.global_position = Vector2(100.0, game.GROUND_Y - 27.0)
 	game.pochacco.velocity = Vector2.ZERO
 	for _frame in 2:
-		await physics_frame
+		await get_tree().physics_frame
 	var route_stars_before: int = game.star_candies
 	var trampoline_bounce_seen := false
 	Input.action_press("move_right")
 	Input.action_press("jump")
-	await physics_frame
+	await get_tree().physics_frame
 	Input.action_release("jump")
 	for _frame in 90:
-		await physics_frame
+		await get_tree().physics_frame
 		if game.dudu.velocity.y <= -680.0:
 			trampoline_bounce_seen = true
 	Input.action_release("move_right")
@@ -89,6 +89,7 @@ func _run() -> void:
 		_check(pad_button != null, "touch pad includes %s button" % key)
 	_check(game.touch_buttons["A"].text == "A\n跳躍" and game.touch_buttons["B"].text == "B\n滾動", "Dudu touch labels show A jump and B roll")
 	_check(game.touch_buttons["X"].text == "X\n坐擊" and game.touch_buttons["R"].text == "R\n攻略", "Dudu touch labels show X ground pound and R guide")
+	_check(game.buddy_gesture_badge != null and game.buddy_gesture_badge.name == "BuddyGestureBadge", "mobile HUD provides a two-portrait gesture switch area")
 	_check(_has_joypad_button("jump", JOY_BUTTON_A), "physical gamepad A maps to jump")
 	game.touch_buttons["A"].button_down.emit()
 	_check(Input.is_action_pressed("jump"), "touch A presses the jump action")
@@ -103,13 +104,13 @@ func _run() -> void:
 	controller_b.button_index = JOY_BUTTON_B
 	controller_b.pressed = true
 	game._unhandled_input(controller_b)
-	_check(not paused, "B attack does not trigger the shared ui_cancel pause mapping")
+	_check(not get_tree().paused, "B attack does not trigger the shared ui_cancel pause mapping")
 	game.touch_buttons["R"].pressed.emit()
 	var guide_copy := ""
 	if game.pause_overlay != null:
 		for node in game.pause_overlay.find_children("*", "Label", true, false):
 			guide_copy += (node as Label).text + "\n"
-	_check(paused and guide_copy.contains("攻略說明") and guide_copy.contains("第一章"), "Dudu R opens a chapter strategy guide")
+	_check(get_tree().paused and guide_copy.contains("攻略說明") and guide_copy.contains("第一章"), "Dudu R opens a chapter strategy guide")
 	game.resume_game()
 	var joystick: Control = game.find_child("TouchJoystick", true, false)
 	_check(joystick != null and joystick.size.x >= 112.0, "a large virtual joystick is available for phone movement")
@@ -145,6 +146,36 @@ func _run() -> void:
 		jump_release.pressed = false
 		jump_release.position = drag_up.position
 		joystick.call("_gui_input", jump_release)
+		var badge: Control = game.buddy_gesture_badge
+		badge.visible = true
+		var badge_center := badge.get_global_rect().get_center()
+		var swipe_down := InputEventScreenTouch.new()
+		swipe_down.index = 7
+		swipe_down.pressed = true
+		swipe_down.position = badge_center
+		game._unhandled_input(swipe_down)
+		var swipe_drag := InputEventScreenDrag.new()
+		swipe_drag.index = 7
+		swipe_drag.position = badge_center + Vector2(36.0, 0.0)
+		game._unhandled_input(swipe_drag)
+		var swipe_up := InputEventScreenTouch.new()
+		swipe_up.index = 7
+		swipe_up.pressed = false
+		swipe_up.position = swipe_drag.position
+		game._unhandled_input(swipe_up)
+		_check(game.active_is_pochacco(), "horizontal swipe on the buddy portraits switches to the other character")
+		for finger in [8, 9]:
+			var tap_down := InputEventScreenTouch.new()
+			tap_down.index = finger
+			tap_down.pressed = true
+			tap_down.position = badge_center
+			game._unhandled_input(tap_down)
+			var tap_up := InputEventScreenTouch.new()
+			tap_up.index = finger
+			tap_up.pressed = false
+			tap_up.position = badge_center
+			game._unhandled_input(tap_up)
+		_check(game.active_is_dudu(), "double tap on the buddy portraits switches back while a single tap does not")
 	game.touch_buttons["L"].pressed.emit()
 	_check(game.active_is_pochacco() and game.get_active_buddy() == game.pochacco, "instant character switching makes Pochacco controllable")
 	_check(game.touch_buttons["B"].text == "B\n迴旋" and game.touch_buttons["X"].text == "X\n嗅嗅" and game.touch_buttons["R"].text == "R\n蕉皮", "Pochacco touch labels update B/X/R actions")
@@ -172,21 +203,23 @@ func _run() -> void:
 	Input.action_press("move_right")
 	game.perform_attack(game.get_active_buddy())
 	for _frame in 12:
-		await physics_frame
+		await get_tree().physics_frame
 	Input.action_release("move_right")
 	_check(game.hidden_wall == null, "Dudu rolls into the discovered wall and breaks it")
 	game.dudu.global_position = Vector2(860.0, game.GROUND_Y - 27.0)
 	game.dudu.velocity = Vector2.ZERO
-	for _frame in 3:
-		await physics_frame
+	_check(game._contextual_coop_hint().contains("按 Y"), "nearby double-weight gate displays an actionable mobile cooperation hint")
+	for _coop_hint_frame in 3:
+		await get_tree().physics_frame
 	game.touch_buttons["Y"].pressed.emit()
 	_check(game.team_weight_activated and game.team_gate == null, "Y gather hug activates the two-companion weight gate")
 	game.switch_character()
 	game.pochacco.global_position = Vector2(game.plate_x, game.GROUND_Y - 27.0)
 	game.pochacco.velocity = Vector2.ZERO
-	for _frame in 5:
-		await physics_frame
+	for _bridge_hint_frame in 5:
+		await get_tree().physics_frame
 	_check(game.plate_pressed and game.plate_is_held(), "Pochacco holds the jam-river bridge switch while Dudu can be selected")
+	_check(game._contextual_coop_hint().contains("合作過橋"), "bridge cooperation state displays a contextual hint")
 	game.switch_character()
 	game.dudu.global_position = Vector2(1400.0, game.GROUND_Y - 27.0)
 	game.pochacco.global_position = Vector2(1390.0, game.GROUND_Y - 27.0)
@@ -196,7 +229,7 @@ func _run() -> void:
 	game.pochacco.global_position = Vector2(1450.0, game.GROUND_Y - 27.0)
 	game.dudu.global_position = Vector2(900.0, game.GROUND_Y - 27.0)
 	for _frame in 2:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(game.dudu.roll_time > 0.0, "AI Dudu auto-rolls to catch up when Pochacco sprints ahead")
 	game.switch_character()
 	game.dudu.global_position = Vector2(2992.0, game.GROUND_Y - 27.0)
@@ -205,11 +238,11 @@ func _run() -> void:
 	game.pochacco.global_position = Vector2(game.plate_x, game.GROUND_Y - 27.0)
 	game.pochacco.velocity = Vector2.ZERO
 	for _frame in 5:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(game.plate_pressed and game.plate_is_held(), "Pochacco keeps the jam-river bridge plate while Dudu leads")
 	game.perform_attack(game.dudu)
 	for _frame in 12:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(game.bridge_cookie == null and game.plate_is_held(), "Dudu's roll breaks the bridge cookie while Pochacco holds the plate")
 	var initial_stars: int = int(game.star_candies)
 	game._add_star(Vector2(2000, 500))
@@ -226,37 +259,38 @@ func _run() -> void:
 	game.pochacco.facing = 1.0
 	game.touch_buttons["R"].pressed.emit()
 	for _frame in 3:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(game.boss_exposed_time > 0.0 and not game.banana_peel_placed, "Pochacco's banana peel makes the cream boss slip and expose its core")
 	game.switch_character()
 	game.dudu.global_position = Vector2(game.boss_x, game.GROUND_Y - 132.0)
 	game.dudu.velocity = Vector2.ZERO
 	for _frame in 2:
-		await physics_frame
+		await get_tree().physics_frame
 	game.touch_buttons["X"].pressed.emit()
-	for _frame in 12:
-		await physics_frame
+	for _frame in 36:
+		await get_tree().physics_frame
 	_check(game.boss_defeated, "Dudu's real ground-pound landing defeats the exposed cream boss core nonviolently")
 	game.open_pause()
-	_check(paused and game.pause_overlay != null, "pause opens its game overlay")
+	_check(get_tree().paused and game.pause_overlay != null, "pause opens its game overlay")
 	game.resume_game()
-	_check(not paused, "resume closes pause and restores play")
+	_check(not get_tree().paused, "resume closes pause and restores play")
 	Input.action_press("move_right")
 	for _frame in 240:
-		await physics_frame
+		await get_tree().physics_frame
 		if game.run_over:
 			break
 	Input.action_release("move_right")
 	_check(game.run_over and game.result_overlay != null, "walking to the recovered strawberry fountain valve opens the chapter result")
 	var has_chapter_two_button := false
-	for node in game.result_overlay.find_children("*", "Button", true, false):
-		if (node as Button).text == "前往第二章":
-			has_chapter_two_button = true
+	if is_instance_valid(game.result_overlay):
+		for node in game.result_overlay.find_children("*", "Button", true, false):
+			if (node as Button).text == "前往第二章":
+				has_chapter_two_button = true
 	_check(has_chapter_two_button, "Chapter One result offers a direct continuation to Chapter Two")
 	game.start_chapter_two()
 	for _frame in 10:
-		await process_frame
-	var cloud_game := current_scene
+		await get_tree().process_frame
+	var cloud_game := get_tree().current_scene
 	_check(cloud_game != null and cloud_game.chapter_index == 2, "continuing from Chapter One loads the cloud-forest chapter")
 	if cloud_game == null or cloud_game.chapter_index != 2:
 		_finish()
@@ -271,10 +305,10 @@ func _run() -> void:
 	cloud_game.dudu.velocity = Vector2.ZERO
 	Input.action_release("move_right")
 	for _frame in 2:
-		await physics_frame
+		await get_tree().physics_frame
 	var gust_start_x: float = cloud_game.dudu.global_position.x
 	for _frame in 8:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(cloud_game.dudu.global_position.x < gust_start_x - 12.0, "active cloud gust has no physical side-push effect")
 	cloud_game.time_alive = 2.0
 	_check(is_zero_approx(cloud_game.cloud_gust_force(Vector2(2940.0, 500.0))), "Chapter Two gust has no safe calm window")
@@ -287,19 +321,19 @@ func _run() -> void:
 	cloud_game.pochacco.facing = 1.0
 	cloud_game.perform_attack(cloud_game.pochacco)
 	for _frame in 45:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(cloud_game.cloud_windmill_active and cloud_game.cloud_gate == null, "Pochacco's returning banana rings the windmill and opens the cloud gate")
 	cloud_game.pochacco.global_position = Vector2(cloud_game.plate_x, cloud_game.GROUND_Y - 27.0)
 	cloud_game.pochacco.velocity = Vector2.ZERO
 	for _frame in 4:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(cloud_game.plate_is_held(), "Pochacco holds the cloud footplate for Dudu")
 	cloud_game.dudu.global_position = Vector2(3400.0, cloud_game.GROUND_Y - 27.0)
 	cloud_game.dudu.facing = 1.0
 	cloud_game.dudu.velocity = Vector2.ZERO
 	cloud_game.perform_attack(cloud_game.dudu)
 	for _frame in 16:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(cloud_game.bridge_cookie == null, "Dudu rolls through the cloud bridge gate while Pochacco holds the plate")
 	cloud_game.pochacco.global_position = Vector2(4050.0, cloud_game.GROUND_Y - 27.0)
 	cloud_game.pochacco.velocity = Vector2.ZERO
@@ -307,16 +341,16 @@ func _run() -> void:
 	cloud_game.boss_x = cloud_game.cloud_boss_x
 	cloud_game.perform_attack(cloud_game.pochacco)
 	for _frame in 38:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(cloud_game.boss_exposed_time > 0.0, "Pochacco's boomerang reveals the cloud spirit's moon-bell core")
 	cloud_game.switch_character()
 	cloud_game.dudu.global_position = Vector2(cloud_game.boss_x, cloud_game.GROUND_Y - 132.0)
 	cloud_game.dudu.velocity = Vector2.ZERO
 	for _frame in 2:
-		await physics_frame
+		await get_tree().physics_frame
 	cloud_game.touch_buttons["X"].pressed.emit()
 	for _frame in 14:
-		await physics_frame
+		await get_tree().physics_frame
 	_check(cloud_game.boss_defeated, "Dudu's ground pound sends the cloud spirit away as a gentle sparkle burst")
 	cloud_game.finish_level()
 	_check(cloud_game.run_over and cloud_game.result_overlay != null, "recovering the moon-honey bell completes Chapter Two")
@@ -340,7 +374,7 @@ func _finish() -> void:
 		push_error("[SNACKISLE_SMOKE_FAIL] " + message)
 	if failures.is_empty():
 		print("[SNACKISLE_SMOKE_PASS] title, zh-TW, duo switch/follow, Chapter One mechanics/result, Chapter Two windmill/cloud gate/footplate/bridge, cloud-spirit boss and moon-bell result")
-	var audio := root.get_node_or_null("GameAudio")
+	var audio := get_tree().root.get_node_or_null("GameAudio")
 	if audio != null and audio.has_method("stop_game"):
 		audio.stop_game()
-	quit(0 if failures.is_empty() else 1)
+	get_tree().quit(0 if failures.is_empty() else 1)

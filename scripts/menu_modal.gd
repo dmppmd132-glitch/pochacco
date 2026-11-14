@@ -59,10 +59,10 @@ func _layout() -> void:
 	scroll.custom_minimum_size.y = maxf(12.0, height - chrome_h)
 
 func heading(key: String) -> void:
-	content.add_child(STYLE.ribbon(I18n.t(key), 38))
+	content.add_child(STYLE.ribbon(str(get_node("/root/I18n").call("t", key)), 38))
 
 func add_close_button() -> Button:
-	var button := STYLE.button(I18n.t("menu.close"))
+	var button := STYLE.button(str(get_node("/root/I18n").call("t", "menu.close")))
 	button.set_meta("audio_cue", "back")
 	button.name = "CloseButton"
 	button.pressed.connect(close_panel)
