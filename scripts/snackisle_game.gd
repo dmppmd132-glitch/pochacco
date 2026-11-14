@@ -1846,7 +1846,7 @@ func damage_source(message: String, source_position: Vector2) -> void:
 
 func fall_to_safety(_buddy: Buddy) -> void:
 	if chapter_index == 3:
-		var active := get_active_buddy()
+		var active = get_active_buddy()
 		if is_instance_valid(active) and active.global_position.x > 1320.0 and checkpoint_x < 1320.0:
 			checkpoint_x = 1500.0
 			show_toast("齒輪廣場檢查點已記下！接下來是發條工坊。")
