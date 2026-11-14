@@ -18,7 +18,7 @@ iPhone／iPad 請以 Safari 開啟網址，選「分享」→「加入主畫面�
 
 新增七組三章地標雙角色繁中短對話，對話不暫停遊戲、依角色／路線條件只觸發一次；靠近隊友切換角色可觸發有冷卻的擊掌反應。PWA 端補上觸控回歸驗收，確認搖桿主指標捕捉與失焦時釋放跳躍輸入，並調整窄螢幕對話字級／文字區。程式層級效能改善包含背景繪製節流至 30Hz、靜態收集品取消每幀重繪、角色裝飾層降至 10Hz；另將 2D Stretch Mode 改為 `viewport`。同源手機模擬 A/B 的畫格中位間隔由 100ms 降至 83.3ms，觸控後首個畫面回呼約改善 23–27%；這是軟體渲染器數據，不等同實體手機 FPS，詳見 [MOBILE_WEB_TEST.md](MOBILE_WEB_TEST.md)。
 
-第四章提案為「月潮玻璃海」，包含回音音序、折光鏡面、可選風險支線與三階段潮汐水母王；這是規劃文件，不代表第四章已有可玩實作，詳見 [CHAPTER_4_PLAN.md](CHAPTER_4_PLAN.md)。本輪互動、觸控與效能變更目前尚未同步至 GitHub Pages。
+第四章提案為「月潮玻璃海」，包含回音音序、折光鏡面、可選風險支線與三階段潮汐水母王；這是規劃文件，不代表第四章已有可玩實作，詳見 [CHAPTER_4_PLAN.md](CHAPTER_4_PLAN.md)。本輪互動、觸控與效能更新已由 commit [`271d999`](https://github.com/dmppmd132-glitch/pochacco/commit/271d999) 推送並部署至 [GitHub Pages](https://github.com/dmppmd132-glitch/pochacco/actions/runs/43577835231)，公開頁手機模擬驗收記錄於 [MOBILE_WEB_TEST.md](MOBILE_WEB_TEST.md)。
 
 第一章開場跳台路線已調整並加入 smoke regression：測試會實際從地面跳上戚風彈跳台、觸發彈跳、落到下一塊餅乾平台並拾取星星糖；第二章測試也會檢查側風作用區、推力及風歇窗口。`npm run test:chapter-three` 另驗收蒸汽噴口、守衛狀態機、Boss 音效路由、嘟嘟實際落地坐擊、打擊回饋與真實章末閘門／鐘芯通關流程；`npm run test:dialogue` 驗收三章地標對話、擊掌、觸控搖桿指標捕捉與失焦釋放。六組 Boss WAV 亦在隔離使用者資料目錄中通過音效完成測試。完整 `npm test` smoke suite 已通過。
 
