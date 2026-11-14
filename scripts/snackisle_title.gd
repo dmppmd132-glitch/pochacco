@@ -12,6 +12,7 @@ var _wardrobe_instance: Node
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_title()
+	GameAudio.begin_title()
 	get_viewport().size_changed.connect(_layout_title)
 	queue_redraw()
 
@@ -262,19 +263,19 @@ func _l10n(value: String, placeholders: Dictionary = {}) -> String:
 
 
 func _start_game() -> void:
+	GameAudio.begin_game()
 	get_tree().set_meta("snackisle_chapter", 1)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
-
 func _start_chapter_two() -> void:
+	GameAudio.begin_game()
 	get_tree().set_meta("snackisle_chapter", 2)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
-
 func _start_chapter_three() -> void:
+	GameAudio.begin_game()
 	get_tree().set_meta("snackisle_chapter", 3)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
-
 
 func _open_wardrobe() -> void:
 	if is_instance_valid(_wardrobe_instance):

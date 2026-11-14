@@ -25,7 +25,7 @@ func _run() -> void:
 	stream.data = samples
 	stream.loop_end = 22050
 	var cues: Dictionary[StringName, AudioStream] = {}
-	for cue in [&"confirm", &"jump", &"land", &"coin", &"stomp", &"checkpoint", &"death", &"success"]:
+	for cue in [&"confirm", &"jump", &"land", &"coin", &"stomp", &"checkpoint", &"death", &"success", &"steam_warning"]:
 		cues[cue] = stream
 	audio.configure(stream, cues)
 	var music_id: int = audio.music.get_instance_id()
@@ -69,40 +69,42 @@ func _run() -> void:
 	audio.stop_game()
 	paused = false
 	audio.begin_game()
-	_check(audio.music.playing and not audio.music.stream_paused, "restart from paused menu stays paused")
+	_check(audio.music.playing and not audio.music.stream_paused, "restart after pause starts unpaused")
 	audio.stop_game()
 	for i in 5:
 		audio.configure(stream, cues)
 		audio.begin_game()
 		audio.stop_game()
 	_check(audio.music.stream.get_instance_id() == resource_id, "same catalog reallocates BGM")
-	# Exercise real title -> gameplay -> death/respawn -> menu transitions.
+	# Exercise the active Snackisle title -> game -> pause/restart -> title flow.
 	for cycle in 3:
 		change_scene_to_file("res://scenes/title_screen.tscn")
 		await process_frame
 		await process_frame
 		_check(audio.music.playing and not audio.enabled, "return title reuses selected music after prior gesture")
-		current_scene._name_entry.text = "AudioTest"
-		current_scene.start_game()
+		current_scene._start_game()
 		await process_frame
 		await process_frame
 		var game = current_scene
 		var cycle_starts: int = audio.music_starts
-		var cue_before: int = audio.get_play_count(&"coin")
-		game._on_coin_collected(Vector2(160, 500))
-		_check(audio.get_play_count(&"coin") == cue_before + 1, "coin cue is not wired")
-		var pause_menu = game.get_node("PauseMenu")
-		pause_menu.open_menu()
+		var cue_before: int = audio.get_play_count(&"steam_warning")
+		game.play_steam_warning()
+		_check(audio.get_play_count(&"steam_warning") == cue_before + 1, "steam warning cue is not wired")
+		game.open_pause()
 		await process_frame
 		await process_frame
-		_check(audio.music.stream_paused, "real pause menu must pause BGM")
-		pause_menu.close_menu()
+		_check(audio.music.stream_paused, "real pause overlay must pause BGM")
+		game.resume_game()
 		await process_frame
 		await process_frame
-		await game._on_player_died()
-		_check(audio.music_starts == cycle_starts, "respawn restarts BGM")
-		_check(audio.get_child_count() == children, "respawn allocates audio players")
-		game.return_to_main_menu()
+		_check(not audio.music.stream_paused, "resuming the game must resume BGM")
+		game.restart_game()
+		await process_frame
+		await process_frame
+		game = current_scene
+		_check(audio.music_starts == cycle_starts, "scene restart restarts BGM")
+		_check(audio.get_child_count() == children, "scene restart allocates audio players")
+		game.return_to_title()
 		await process_frame
 		await process_frame
 		_check(not audio.enabled and audio.music.playing, "main menu keeps only selected music after prior gesture")
@@ -129,7 +131,7 @@ func _run() -> void:
 	# Allow the mixer to consume stop requests before engine shutdown.
 	await create_timer(0.15).timeout
 	if not failed:
-		print("[AUDIO_IDLE_PASS] idempotent pause/start, bounded SFX, real respawn/menu cycles")
+		print("[AUDIO_IDLE_PASS] idempotent pause/start, bounded SFX, real title/game/pause/restart/menu cycles")
 	quit(1 if failed else 0)
 
 
