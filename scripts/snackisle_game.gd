@@ -216,6 +216,7 @@ class StarCandy extends Area2D:
 	var phase := 0.0
 
 	func _ready() -> void:
+		add_to_group("star_candy")
 		collision_layer = 0
 		collision_mask = 2
 		var shape := CollisionShape2D.new()
@@ -439,6 +440,7 @@ class Buddy extends CharacterBody2D:
 	var moving_axis := 0.0
 	var previous_floor := false
 	var bounce_guard := 0.0
+	var steam_stun_time := 0.0
 	var floor_probe: RayCast2D
 
 	func jump_speed() -> float:
@@ -484,7 +486,10 @@ class Buddy extends CharacterBody2D:
 		roll_time = maxf(0.0, roll_time - delta)
 		landing_lock = maxf(0.0, landing_lock - delta)
 		bounce_guard = maxf(0.0, bounce_guard - delta)
+		steam_stun_time = maxf(0.0, steam_stun_time - delta)
 		var direction := clampf(Input.get_axis("move_left", "move_right") + game.touch_move_axis, -1.0, 1.0) if controlled else _follow_axis()
+		if steam_stun_time > 0.0:
+			direction = 0.0
 		moving_axis = direction
 		if absf(direction) > 0.05:
 			facing = signf(direction)
@@ -499,16 +504,16 @@ class Buddy extends CharacterBody2D:
 			if game.is_cloud_updraft(global_position.x):
 				velocity.y -= 430.0 * delta
 		var touch_jump: bool = game.consume_touch_jump() if controlled else false
-		if controlled and (Input.is_action_just_pressed("jump") or touch_jump) and on_floor_before and landing_lock <= 0.0:
+		if controlled and steam_stun_time <= 0.0 and (Input.is_action_just_pressed("jump") or touch_jump) and on_floor_before and landing_lock <= 0.0:
 			velocity.y = -jump_speed()
 			game.on_jump(self)
-		if controlled and is_dudu and Input.is_action_just_pressed("ground_pound"):
+		if controlled and steam_stun_time <= 0.0 and is_dudu and Input.is_action_just_pressed("ground_pound"):
 			start_ground_pound()
-		if controlled and Input.is_action_just_pressed("attack"):
+		if controlled and steam_stun_time <= 0.0 and Input.is_action_just_pressed("attack"):
 			game.perform_attack(self)
-		if controlled and not is_dudu and Input.is_action_just_pressed("sniff"):
+		if controlled and steam_stun_time <= 0.0 and not is_dudu and Input.is_action_just_pressed("sniff"):
 			game.detect_clues()
-		if controlled and not is_dudu and Input.is_action_just_pressed("drop_peel"):
+		if controlled and steam_stun_time <= 0.0 and not is_dudu and Input.is_action_just_pressed("drop_peel"):
 			game.drop_banana_peel(self)
 		var speed := move_speed()
 		if roll_time > 0.0 and is_dudu:
@@ -854,7 +859,17 @@ func _build_gear_world() -> void:
 	_add_platform(320, 555, 240, 24, "chiffon")
 	_add_platform(1280, 470, 190, 24, "biscuit")
 	_add_platform(2420, 390, 190, 24, "chiffon")
+	var risk_entry = _add_platform(2630, 425, 210, 24, "biscuit")
+	risk_entry.set_meta("route_id", "high_risk")
+	var safe_a = _add_platform(2860, 550, 220, 24, "wafer")
+	var safe_b = _add_platform(3120, 550, 220, 24, "wafer")
+	var safe_c = _add_platform(3380, 550, 220, 24, "wafer")
+	var safe_d = _add_platform(3640, 550, 240, 24, "wafer")
+	for platform in [safe_a, safe_b, safe_c, safe_d]:
+		platform.set_meta("route_id", "safe")
 	_add_platform(3740, 300, 210, 24, "biscuit")
+	var route_merge = _add_platform(3820, 535, 280, 24, "wafer")
+	route_merge.set_meta("route_id", "merge")
 	chapter_three = CHAPTER_THREE_CONTROLLER.new()
 	chapter_three.name = "ChapterThreeGearController"
 	chapter_three.game = self
@@ -867,9 +882,13 @@ func _build_gear_world() -> void:
 	_add_star(Vector2(1870, 375))
 	_add_star(Vector2(2200, 375))
 	_add_star(Vector2(2540, 330))
-	_add_star(Vector2(3120, 310))
-	_add_star(Vector2(3490, 250))
-	_add_star(Vector2(3890, 245))
+	_add_star(Vector2(3000, 520), "safe")
+	_add_star(Vector2(3600, 520), "safe")
+	_add_star(Vector2(2940, 326), "high_risk")
+	_add_star(Vector2(3100, 326), "high_risk")
+	_add_star(Vector2(3260, 326), "high_risk")
+	_add_star(Vector2(3420, 326), "high_risk")
+	_add_star(Vector2(3580, 326), "high_risk")
 	_add_star(Vector2(4390, 540))
 	_add_ingredient(Vector2(720, 458), "gear")
 	_add_ingredient(Vector2(2180, 380), "gear")
@@ -939,10 +958,11 @@ func _add_barrier(x: float, center_y: float, dimensions: Vector2, kind: String):
 	return block
 
 
-func _add_star(pos: Vector2) -> void:
+func _add_star(pos: Vector2, route_id := "main") -> void:
 	var candy := StarCandy.new()
 	candy.game = self
 	candy.position = pos
+	candy.set_meta("route_id", route_id)
 	add_child(candy)
 
 
@@ -1507,7 +1527,8 @@ func detect_clues() -> void:
 		clue_time = 9.0
 		if is_instance_valid(chapter_three):
 			chapter_three.bell_active = true
-		show_toast("帕恰狗嗅到齒輪節拍！黃銅鈴會提示下一個安全方向。")
+		var vent_hint: String = chapter_three.steam_hint(pochacco.global_position.x) if is_instance_valid(chapter_three) and is_instance_valid(pochacco) else ""
+		show_toast(vent_hint if not vent_hint.is_empty() else "帕恰狗嗅到齒輪節拍！黃銅鈴會提示下一個安全方向。")
 		_update_objective()
 		queue_redraw()
 		return
@@ -1752,6 +1773,10 @@ func _contextual_coop_hint() -> String:
 		return ""
 	var x: float = active.global_position.x
 	if chapter_index == 3:
+		if x >= 2800.0 and x <= 3950.0:
+			if active.global_position.y < 450.0:
+				return "高風險糖果路線：高速齒輪與蒸汽噴口；多 3 顆星星糖，坐擊可壓閥。"
+			return "安全路線：沿低位平台與慢速齒輪前進；蒸汽失誤會彈回安全平台。"
 		if not clues_visible and absf(x - 760.0) <= 300.0:
 			return "齒輪教學：切換帕恰狗按 X 嗅出節拍，再用 B 敲響黃銅鈴。"
 		if clues_visible and absf(x - 1090.0) <= 280.0:
@@ -1844,15 +1869,40 @@ func damage_source(message: String, source_position: Vector2) -> void:
 		show_toast(message)
 
 
+func handle_steam_vent_hit(buddy: CharacterBody2D, safe_position: Vector2, vent_x: float) -> void:
+	if not is_instance_valid(buddy) or run_over:
+		return
+	var recoil_direction := signf(buddy.global_position.x - vent_x)
+	if is_zero_approx(recoil_direction):
+		recoil_direction = 1.0 if buddy.get("facing") >= 0.0 else -1.0
+	buddy.global_position = safe_position
+	buddy.set("steam_stun_time", 0.42)
+	buddy.set("hurt_pose_time", 0.42)
+	buddy.set("squash_time", 0.36)
+	buddy.velocity = Vector2(recoil_direction * 145.0, -220.0)
+	spawn_burst(safe_position, Color("#fffdf2"))
+	show_toast("蒸汽把夥伴彈回下方安全平台！短暫暈眩後可繼續，等冷卻窗口再跳。")
+
+
+func play_steam_warning() -> void:
+	var audio = get_node_or_null("/root/GameAudio")
+	if is_instance_valid(audio):
+		audio.call("play", &"steam_warning")
+
+
 func fall_to_safety(_buddy: Buddy) -> void:
 	if chapter_index == 3:
-		var active = get_active_buddy()
-		if is_instance_valid(active) and active.global_position.x > 1320.0 and checkpoint_x < 1320.0:
-			checkpoint_x = 1500.0
-			show_toast("齒輪廣場檢查點已記下！接下來是發條工坊。")
-		elif is_instance_valid(active) and active.global_position.x > 2700.0 and checkpoint_x < 2700.0:
+		var fall_x := _buddy.global_position.x if is_instance_valid(_buddy) else checkpoint_x
+		if fall_x > 3860.0:
+			checkpoint_x = 3940.0
+			show_toast("鐘樓檢查點已記下！從安全匯合平台繼續。")
+		elif fall_x > 2700.0 and checkpoint_x < 2700.0:
 			checkpoint_x = 2860.0
-			show_toast("發條工坊檢查點已記下！鐘樓外環就在前方。")
+			show_toast("發條工坊檢查點已記下！回到鐘樓分岔前的安全平台。")
+		elif fall_x > 1320.0 and checkpoint_x < 1320.0:
+			checkpoint_x = 1500.0
+			show_toast("齒輪廣場檢查點已記下！從最近安全處繼續。")
+		_reset_to_checkpoint()
 		return
 	if damage_cooldown > 0.0 or run_over:
 		return
@@ -1918,6 +1968,11 @@ func on_buddy_arrived(_buddy: Buddy) -> void:
 
 func on_buddy_moved_checkpoint_check() -> void:
 	var active = get_active_buddy()
+	if chapter_index == 3:
+		if active.global_position.x > 3860.0 and checkpoint_x < 3860.0:
+			checkpoint_x = 3940.0
+			show_toast("安全／高風險路線已匯合，鐘樓檢查點已記下！")
+		return
 	if chapter_index == 2:
 		if active.global_position.x > 1450.0 and checkpoint_x < 1450.0:
 			checkpoint_x = 1480.0

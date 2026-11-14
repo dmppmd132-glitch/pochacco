@@ -1,8 +1,11 @@
 extends Node2D
 class_name ChapterThreeController
 
+const STEAM_VENT_SCRIPT: Script = preload("res://scripts/steam_vent.gd")
+
 var game
 var gears: Array[GearPlatform] = []
+var steam_vents: Array[Area2D] = []
 var bell_active := false
 var core_restored := false
 var brake_count := 0
@@ -16,6 +19,7 @@ class GearPlatform extends AnimatableBody2D:
 	var paused_time := 0.0
 	var phase := 0.0
 	var gear_id := ""
+	var interaction_enabled := true
 
 	func _ready() -> void:
 		collision_layer = 1
@@ -69,8 +73,60 @@ class GearPlatform extends AnimatableBody2D:
 func setup(controller_game) -> void:
 	game = controller_game
 	_build_gears()
+	_build_steam_vents()
 	queue_redraw()
 
+
+func _build_steam_vents() -> void:
+	# High-risk route only: the safe lower lane remains free of steam collision.
+	var vent_specs := [
+		["工坊蒸汽閥 A", Vector2(2970.0, 425.0), 0.0],
+		["工坊蒸汽閥 B", Vector2(3260.0, 425.0), 1.2],
+		["工坊蒸汽閥 C", Vector2(3540.0, 425.0), 2.4],
+	]
+	for spec in vent_specs:
+		var vent: Area2D = STEAM_VENT_SCRIPT.new()
+		vent.name = String(spec[0])
+		vent.setup(game, String(spec[0]), spec[1], Vector2(2850.0, game.GROUND_Y - 27.0), float(spec[2]))
+		add_child(vent)
+		steam_vents.append(vent)
+
+
+func steam_hint(at_x: float) -> String:
+	var nearest: Area2D
+	var nearest_distance := INF
+	for vent in steam_vents:
+		if not is_instance_valid(vent):
+			continue
+		var distance := absf(vent.global_position.x - at_x)
+		if distance < nearest_distance:
+			nearest = vent
+			nearest_distance = distance
+	if nearest == null or nearest_distance > 520.0:
+		return ""
+	var state: String = nearest.call("phase_name")
+	match state:
+		"preheat": return "帕恰狗嗅到蒸汽閥正在預熱！黃燈閃爍時先停下，噴發後再走。"
+		"erupting": return "帕恰狗嗅到蒸汽正在噴發！等白色蒸汽散去，或讓嘟嘟坐擊壓住附近閥門。"
+		_: return "帕恰狗嗅到蒸汽閥已冷卻；現在是安全通過窗口。"
+
+
+func suppress_vent_near(at_x: float) -> bool:
+	var nearest: Area2D
+	var nearest_distance := INF
+	for vent in steam_vents:
+		if not is_instance_valid(vent):
+			continue
+		var distance := absf(vent.global_position.x - at_x)
+		if distance < nearest_distance:
+			nearest = vent
+			nearest_distance = distance
+	if nearest == null or nearest_distance > 145.0:
+		return false
+	var suppressed: bool = nearest.call("suppress_for", 2.4)
+	if suppressed:
+		game.show_toast("蒸汽閥被嘟嘟壓住 2.4 秒！趁安全窗口通過。")
+	return suppressed
 func _build_gears() -> void:
 	_add_gear("廣場齒輪", Vector2(690, 500), 520.0, 900.0, 118.0)
 	_add_gear("工坊齒輪", Vector2(1900, 430), 1600.0, 2260.0, 132.0)
@@ -114,6 +170,8 @@ func on_boomerang_hit(at_x: float) -> void:
 		reverse_near(2670.0)
 
 func on_ground_pound(at_x: float) -> void:
+	if suppress_vent_near(at_x):
+		return
 	if at_x > 980.0 and at_x < 1200.0:
 		brake_near(1090.0)
 	elif at_x > 2500.0 and at_x < 2800.0:
@@ -148,5 +206,7 @@ func _draw() -> void:
 		draw_string(font, Vector2(520, 558), "齒輪廣場｜看箭頭、聽黃銅鈴", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#8e604f"))
 		draw_string(font, Vector2(1660, 332), "發條工坊｜停靠記號", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#8e604f"))
 		draw_string(font, Vector2(2920, 265), "鐘樓外環｜安全窗口", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#8e604f"))
+		draw_string(font, Vector2(2860, 602), "安全路線｜低平台・慢速齒輪・2 顆糖", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#527f70"))
+		draw_string(font, Vector2(2860, 240), "高風險糖果路線｜高速齒輪・蒸汽噴口・多 3 顆糖", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#a35f4d"))
 		if core_restored:
 			draw_string(font, Vector2(4640, 500), "星星糖鐘芯已啟動", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#a66b42"))

@@ -32,3 +32,23 @@ test('chapter three is reachable from the title and main game flow', () => {
   assert.match(game, /第三章｜糖霜齒輪城/);
   assert.match(game, /chapter_index == 3/);
 });
+
+test('chapter three steam vents cycle and support sniff / pound interactions', () => {
+  const result = spawnSync('godot', ['--headless', '--audio-driver', 'Dummy', '--path', '.', '--script', 'test/chapter_three_mechanics.gd'], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 45000,
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /CHAPTER_THREE_MECHANICS_PASS/);
+});
+
+test('chapter three keeps the optional high-risk route and three-star bonus distinct', () => {
+  const game = read('scripts/snackisle_game.gd');
+  assert.match(game, /risk_entry\.set_meta\("route_id", "high_risk"\)/);
+  assert.match(game, /safe_a = _add_platform/);
+  assert.match(game, /route_merge\.set_meta\("route_id", "merge"\)/);
+  assert.equal([...game.matchAll(/_add_star\(Vector2\(\d+, \d+\), "high_risk"\)/g)].length, 5);
+  assert.equal([...game.matchAll(/_add_star\(Vector2\(\d+, \d+\), "safe"\)/g)].length, 2);
+  assert.match(game, /checkpoint_x = 3940\.0/);
+});
