@@ -3,6 +3,9 @@ class_name ChapterThreeController
 
 const STEAM_VENT_SCRIPT: Script = preload("res://scripts/steam_vent.gd")
 const GEAR_GUARDIAN_SCRIPT: Script = preload("res://scripts/gear_guardian.gd")
+const TURN_WARNING_SECONDS := 0.5
+const FIRST_BRAKE_TUTORIAL_SECONDS := 6.5
+const STANDARD_BRAKE_SECONDS := 5.0
 
 var game
 var gears: Array[GearPlatform] = []
@@ -12,6 +15,9 @@ var bell_active := false
 var core_unlocked := false
 var core_restored := false
 var brake_count := 0
+var brake_tutorial_used := false
+var last_brake_duration := 0.0
+var brake_was_active := false
 
 const GEAR_SPECS := [
 	{"id": "廣場齒輪", "position": Vector2(690.0, 500.0), "left_x": 520.0, "right_x": 900.0, "speed": 118.0, "linked_group_id": "square_route", "next_dock_marker": "廣場入口", "checkpoint_id": "ch3_square"},
@@ -30,6 +36,22 @@ const INTERACTION_SPECS := [
 
 var interaction_nodes: Array[Dictionary] = []
 
+
+func _process(_delta: float) -> void:
+	var brake_active := has_active_brake()
+	if brake_active != brake_was_active:
+		brake_was_active = brake_active
+		if is_instance_valid(game):
+			game._update_objective()
+
+
+func has_active_brake() -> bool:
+	for gear in gears:
+		if is_instance_valid(gear) and gear.is_braked():
+			return true
+	return false
+
+
 class GearPlatform extends AnimatableBody2D:
 	var size := Vector2(300.0, 30.0)
 	var left_x := 0.0
@@ -47,6 +69,10 @@ class GearPlatform extends AnimatableBody2D:
 	var gear_phase := 0.0
 	var motion_delta := Vector2.ZERO
 	var interaction_enabled := true
+	var turn_warning_active := false
+	var turn_warning_announced := false
+	var warning_elapsed := 0.0
+
 	func _ready() -> void:
 		collision_layer = 1
 		collision_mask = 0
@@ -75,18 +101,33 @@ class GearPlatform extends AnimatableBody2D:
 				gear_phase = _normalized_phase()
 			queue_redraw()
 			return
+		var distance_to_turn := right_x - position.x if direction > 0.0 else position.x - left_x
+		if distance_to_turn <= speed * TURN_WARNING_SECONDS and not turn_warning_announced:
+			turn_warning_active = true
+			turn_warning_announced = true
+			warning_elapsed = 0.0
+			var tree := Engine.get_main_loop() as SceneTree
+			var audio := tree.root.get_node_or_null("GameAudio") if tree != null else null
+			if audio != null and audio.has_method("play"):
+				audio.play(&"gear_turn_warning")
 		var previous_position := position
 		var next_x := position.x + direction * speed * delta
 		if next_x <= left_x or next_x >= right_x:
 			next_x = clampf(next_x, left_x, right_x)
 			direction *= -1.0
+			turn_warning_active = false
+			turn_warning_announced = false
 		position.x = next_x
 		motion_delta = position - previous_position
 		gear_phase = _normalized_phase()
+		if turn_warning_active:
+			warning_elapsed += delta
 		queue_redraw()
 
 	func reverse_direction() -> void:
 		direction *= -1.0
+		turn_warning_active = false
+		turn_warning_announced = false
 		gear_phase = _normalized_phase()
 		queue_redraw()
 
@@ -122,11 +163,20 @@ class GearPlatform extends AnimatableBody2D:
 		draw_line(Vector2(bounds.position.x, 10.0), Vector2(bounds.end.x, 10.0), Color("#9c604b"), 3.0, true)
 		for x in range(-int(size.x * 0.42), int(size.x * 0.43), 34):
 			draw_circle(Vector2(x, -2), 4.0, Color("#ffe08a"))
+		var arrow_visible := not turn_warning_active or int(floor(warning_elapsed * 12.0)) % 2 == 0
+		if arrow_visible:
+			var arrow_color := Color("#8a493f") if not turn_warning_active else Color("#fff1a6")
+			var arrow_origin := Vector2(0.0, -size.y * 0.5 - 17.0)
+			var arrow_tip := arrow_origin + Vector2(direction * 24.0, 0.0)
+			draw_line(arrow_origin, arrow_tip, arrow_color, 5.0, true)
+			draw_line(arrow_tip, arrow_tip + Vector2(-direction * 9.0, -7.0), arrow_color, 4.0, true)
+			draw_line(arrow_tip, arrow_tip + Vector2(-direction * 9.0, 7.0), arrow_color, 4.0, true)
+		if turn_warning_active:
+			draw_string(ThemeDB.fallback_font, Vector2(-34.0, -size.y * 0.5 - 27.0), "即將換向", HORIZONTAL_ALIGNMENT_CENTER, 68.0, 12, Color("#6f342e"))
 		for x in [-size.x * 0.36, 0.0, size.x * 0.36]:
 			draw_arc(Vector2(x, -size.y * 0.5 - 9.0), 12.0, 0.0, TAU, 12, Color("#a7654d"), 4.0, true)
 		if is_braked():
 			draw_line(Vector2(-18, -18), Vector2(18, -18), Color("#f6d46c"), 5.0, true)
-
 func setup(controller_game) -> void:
 	game = controller_game
 	_build_gears()
@@ -233,9 +283,15 @@ func brake_near(at_x: float) -> bool:
 	var gear := _gear_by_id(String(node["gear_id"]))
 	if gear == null:
 		return false
-	gear.brake_for(5.0)
+	var brake_duration := FIRST_BRAKE_TUTORIAL_SECONDS if not brake_tutorial_used else STANDARD_BRAKE_SECONDS
+	brake_tutorial_used = true
+	last_brake_duration = brake_duration
+	gear.brake_for(brake_duration)
 	brake_count += 1
-	game.show_toast("煞車踏板卡住 %s 5 秒！趁停靠記號對齊時跳上去。" % gear.gear_id)
+	if is_equal_approx(brake_duration, FIRST_BRAKE_TUTORIAL_SECONDS):
+		game.show_toast("第一次煞車教學：%s 停靠 6.5 秒，留意對齊記號再跳躍！" % gear.gear_id)
+	else:
+		game.show_toast("煞車踏板卡住 %s 5 秒！趁停靠記號對齊時跳上去。" % gear.gear_id)
 	game._update_objective()
 	return true
 
@@ -287,9 +343,6 @@ func _draw() -> void:
 		var tint := Color("#f6d26e") if gear.is_braked() else Color("#c98b51")
 		draw_circle(gear.position + Vector2(0, -30), 28.0, tint)
 		draw_circle(gear.position + Vector2(0, -30), 12.0, Color("#fff0bf"))
-		var arrow_x := gear.position.x + (34.0 if gear.direction > 0.0 else -34.0)
-		draw_line(Vector2(arrow_x, gear.position.y - 64), Vector2(arrow_x - 10.0 * gear.direction, gear.position.y - 52), Color("#fff6d2"), 5.0, true)
-		draw_line(Vector2(arrow_x, gear.position.y - 64), Vector2(arrow_x + 10.0 * gear.direction, gear.position.y - 52), Color("#fff6d2"), 5.0, true)
 	if game != null and game.GAME_FONT != null:
 		var font: Font = game.GAME_FONT
 		draw_string(font, Vector2(520, 558), "齒輪廣場｜看箭頭、聽黃銅鈴", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#8e604f"))

@@ -2048,7 +2048,11 @@ func _contextual_coop_hint() -> String:
 		if not clues_visible and absf(x - 760.0) <= 300.0:
 			return "齒輪教學：切換帕恰狗按 X 嗅出節拍，再用 B 敲響黃銅鈴。"
 		if clues_visible and absf(x - 1090.0) <= 280.0:
-			return "齒輪教學：帕恰狗按 B 敲鈴換向；嘟嘟在煞車踏板按 X 停靠 5 秒。"
+			return "齒輪教學：帕恰狗按 B 敲鈴換向；嘟嘟首次按 X 煞車可停靠 6.5 秒。"
+		if is_instance_valid(chapter_three):
+			for gear in chapter_three.gears:
+				if gear.turn_warning_active and absf(x - gear.global_position.x) <= 360.0:
+					return "方向預告：齒輪即將換向！看閃爍箭頭，站穩後再跳。"
 		if is_instance_valid(chapter_three) and chapter_three.brake_count > 0 and absf(x - 2700.0) <= 320.0:
 			return "發條工坊：觀察停靠記號，趁齒輪停住時跳上下一段。"
 		return "糖霜齒輪城：沿安全平台前進，讓兩個夥伴讀懂機械節奏。"
@@ -2104,8 +2108,9 @@ func _update_objective() -> void:
 			objective_label.text = _l10n("核心受擊！守衛正改變攻擊節奏；等帕恰狗再次敲中黃銅卡榫。")
 		elif is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian) and chapter_three.guardian.activated:
 			objective_label.text = _l10n("跳躍躲開齒輪波紋；擺錘預告時站到外側。帕恰狗敲卡榫後，換嘟嘟坐擊核心。")
-		elif is_instance_valid(chapter_three) and chapter_three.brake_count > 0:
-			objective_label.text = _l10n("齒輪暫停了！趁 5 秒安全窗口越過發條工坊。")
+		elif is_instance_valid(chapter_three) and chapter_three.has_active_brake():
+			var brake_seconds := str(chapter_three.last_brake_duration).trim_suffix(".0")
+			objective_label.text = _l10n("齒輪暫停了！趁 %s 秒安全窗口觀察停靠記號並跳上平台。" % brake_seconds)
 		elif clues_visible:
 			objective_label.text = _l10n("黃銅鈴線索出現了！用帕恰狗迴旋鏢切換齒輪方向。")
 		else:

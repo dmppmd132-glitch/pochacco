@@ -17,6 +17,7 @@ const CUE_PATHS: Dictionary[StringName, String] = {
 	&"death": "res://assets/template/audio/death.ogg",
 	&"success": "res://assets/template/audio/success.ogg",
 	&"steam_warning": "res://assets/template/audio/land.ogg",
+	&"gear_turn_warning": "res://assets/template/audio/land.ogg",
 	&"boss_warning": "res://assets/snackisle/audio/boss_warning.wav",
 	&"boss_ripple": "res://assets/snackisle/audio/boss_ripple.wav",
 	&"boss_pendulum": "res://assets/snackisle/audio/boss_pendulum.wav",
@@ -40,6 +41,7 @@ const CUE_PATHS: Dictionary[StringName, String] = {
 const CUE_SETTINGS := {
 	&"invalid": {"cooldown_ms": 300, "gain_db": -13.0},
 	&"steam_warning": {"cooldown_ms": 700, "gain_db": -16.0, "pitch": 0.72},
+	&"gear_turn_warning": {"cooldown_ms": 700, "gain_db": -15.0, "pitch": 1.35},
 	&"tutorial": {"cooldown_ms": 300, "gain_db": -15.0},
 	&"boss_warning": {"cooldown_ms": 280, "gain_db": -11.0, "pitch": 0.94},
 	&"boss_ripple": {"cooldown_ms": 220, "gain_db": -9.5, "pitch": 0.92},

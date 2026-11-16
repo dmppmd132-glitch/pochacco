@@ -13,6 +13,7 @@
     "test:platform-route": "godot --headless --audio-driver Dummy --path . --script test/platform_route_contract.gd",
     "test:cloud-gust": "godot --headless --audio-driver Dummy --path . --script test/cloud_gust_contract.gd",
     "test:chapter-three": "node --test test/chapter-three-contract.test.mjs",
+    "test:chapter-three-route": "godot --headless --audio-driver Dummy --path . --script test/chapter_three_route_smoke.gd",
     "test:chapter-four": "node --test test/chapter-four-entry.test.mjs && godot --headless --audio-driver Dummy --path . --script test/chapter_four_mechanics.gd && godot --headless --audio-driver Dummy --path . --script test/chapter_four_integration.gd",
     "test:responsive": "godot --headless --audio-driver Dummy --path . --scene test/responsive_runner.tscn",
     "test:dialogue": "godot --headless --audio-driver Dummy --path . --script test/story_dialogue_contract.gd",

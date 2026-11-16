@@ -29,7 +29,8 @@ test('chapter three graybox declares data-driven gear routes and a five-second b
   assert.match(source, /var brake_remaining := 0\.0/);
   assert.match(source, /var motion_delta := Vector2\.ZERO/);
   assert.match(source, /sync_to_physics = true/);
-  assert.match(source, /gear\.brake_for\(5\.0\)/);
+  assert.match(source, /const STANDARD_BRAKE_SECONDS := 5\.0/);
+  assert.match(source, /gear\.brake_for\(brake_duration\)/);
   assert.match(source, /func reverse_direction\(\)/);
   assert.doesNotMatch(source, /return reverse_near\(1090\.0\)/);
   assert.doesNotMatch(source, /return reverse_near\(2670\.0\)/);
@@ -89,4 +90,26 @@ test('chapter three workshop exposes a high-gear landing platform and recovery c
   assert.match(game, /_add_platform\(2280, 350, 150, 24, "chiffon"\)/);
   assert.match(game, /checkpoint_x = 2240\.0/);
   assert.match(game, /雙齒輪高位落點已記下/);
+});
+
+test('chapter three previews automatic turns, teaches the longer first brake, and runs the real route smoke', () => {
+  const chapter = read('scripts/chapter_three.gd');
+  const audio = read('scripts/audio_catalog.gd');
+  const game = read('scripts/snackisle_game.gd');
+  assert.match(chapter, /const TURN_WARNING_SECONDS := 0\.5/);
+  assert.match(chapter, /turn_warning_active/);
+  assert.match(chapter, /gear_turn_warning/);
+  assert.match(chapter, /const FIRST_BRAKE_TUTORIAL_SECONDS := 6\.5/);
+  assert.match(chapter, /const STANDARD_BRAKE_SECONDS := 5\.0/);
+  assert.match(chapter, /func has_active_brake\(\)/);
+  assert.match(game, /chapter_three\.has_active_brake\(\)/);
+  assert.match(game, /chapter_three\.last_brake_duration/);
+  assert.match(audio, /&"gear_turn_warning": "res:\/\/assets\/template\/audio\/land\.ogg"/);
+  const result = spawnSync('godot', ['--headless', '--audio-driver', 'Dummy', '--path', '.', '--script', 'test/chapter_three_route_smoke.gd'], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 60000,
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /CHAPTER_THREE_ROUTE_SMOKE_PASS/);
 });
