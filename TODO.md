@@ -34,7 +34,7 @@
 - [x] 完整專案資源匯入後執行 `npm test`：`SNACKISLE_SMOKE_PASS`；第一章、第二章與標題／結算 smoke 通過。
 - [x] 2026-11-16 第四章第一階段：`npm run test:chapter-four`（繁中標題入口及窄螢幕寬度調整、三種回音聽覺 cue、正確／錯誤重播與失焦清理、16 組鏡面方向、有限光路、真實遊戲兩道門整合）通過；`test:chapter-three` 7/7、`test:dialogue`、`test:platform-route`、`test:cloud-gust`、`test:checks` 及 `npm test` smoke 通過。Smoke 結束仍有 Godot ObjectDB／Resource 清理警告，退出碼為 0。
 - [x] `godot --headless --path . --script test/localization.gd`：固定 zh-TW、實際介面字串與繁中字型 fallback。
-- [ ] `npm run test:responsive`：16:9 橫向標題頁、手帳 HUD 及觸控目標的 viewport 佈局測試曾有通過紀錄；本輪 standalone `--script` 執行時，標題頁 preload 因 `I18n`／`TuningStore`／`GameAudio` autoload globals 未就緒而失敗，需改用正常主場景初始化方式重跑。
+- [x] `npm run test:responsive`：改由 `test/responsive_runner.tscn` 正常啟動專案 autoload 後，完整通過 2 種 display mode × 6 種 16:9 橫向 viewport；覆蓋標題頁、手帳 HUD、觸控目標、對話氣泡避讓及搖桿／右側能力鍵多指並行。
 - [x] Godot Web 預覽輸出檢查：manifest 為 `standalone`／`landscape`，圖示、Service Worker、離線頁及 WASM/PCK 快取規則存在；WASM MIME 為 `application/wasm`。
 - [x] HTTPS 預覽實際到達遊戲標題畫面。
 
@@ -46,8 +46,8 @@
 - [x] 減少程式繪製負載：背景重繪節流至 30Hz、星星糖／食材移動不再每幀要求重繪、角色裝飾層降至 10Hz，角色 sprite 僅在影格變更時換貼圖；2D Stretch Mode 改為 `viewport`，減少高 DPR 的內部繪製解析度。
 - [x] Chromium Android／Pixel 7 手機模擬 A/B（915×412、DPR 2.625、軟體渲染器）：同源對照 `canvas_items` 為 p50 100ms／P95 116.6ms，`viewport` 為 p50 83.3ms／P95 100ms；搖桿／跳躍觸控到第一個畫面回呼分別由 93.2／107.9ms 降至 72.1／78.4ms。限制與方法記錄於 [MOBILE_WEB_TEST.md](MOBILE_WEB_TEST.md)。
 - [x] 新增 `npm run test:dialogue`：檢查三章故事觸發、逐句回應、一次性對話、擊掌冷卻、多指搖桿捕捉與失焦釋放。
-- [ ] 在實體 iPhone／Android PWA 量測 FPS、耗電與觸控硬體延遲；確認 viewport 畫質、對話氣泡不遮住跳躍落點，以及搖桿與右側能力按鈕可同時操作。
-- [ ] 修復 responsive standalone harness 的 autoload 初始化後重跑完整 viewport 測試；本輪對話契約已在真實遊戲場景中驗收上述觸控輸入。
+- [ ] 在實體 iPhone／Android PWA 量測 FPS、耗電與觸控硬體延遲；確認 viewport 畫質、對話氣泡不遮住跳躍落點，以及搖桿與右側能力按鈕可同時操作。雲端執行環境無法代表實體硬體，仍待真機記錄。
+- [x] 修復 responsive standalone harness 的 autoload 初始化後重跑完整 viewport 測試；本輪對話契約已在真實遊戲場景中驗收上述觸控輸入，並新增對話氣泡／觸控區域及搖桿＋能力鍵並行回歸檢查。
 
 ## 待實機確認
 

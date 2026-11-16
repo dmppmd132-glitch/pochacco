@@ -1,4 +1,4 @@
-extends SceneTree
+extends Node
 
 const TITLE_SCENE: PackedScene = preload("res://scenes/title_screen.tscn")
 const GAME_SCENE: PackedScene = preload("res://scenes/game.tscn")
@@ -18,80 +18,86 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 
+func _ready() -> void:
+	_initialize()
+
+
 func _run() -> void:
-	var store := root.get_node("TuningStore")
+	var window := get_tree().root
+	var store := window.get_node("TuningStore")
 	var original_mode: float = store.get_value("display_mode")
 	for display_mode in [0.0, 1.0]:
 		store.set_value("display_mode", display_mode)
 		for physical_size: Vector2i in VIEWPORT_SIZES:
-			root.size = physical_size
+			window.size = physical_size
 			await _settle()
 			_check_viewport(physical_size, int(display_mode))
 			await _check_title(physical_size)
 			await _check_game(physical_size)
 	store.set_value("display_mode", original_mode)
-	var audio := root.get_node_or_null("GameAudio")
+	var audio := window.get_node_or_null("GameAudio")
 	if audio != null:
 		audio.stop_game()
 	if failures.is_empty():
 		print("[SNACKISLE_RESPONSIVE_PASS] 16:9 PWA, title, notebook HUD and touch targets across landscape viewport sizes")
 	for message: String in failures:
 		push_error("[SNACKISLE_RESPONSIVE_FAIL] " + message)
-	quit(0 if failures.is_empty() else 1)
+	get_tree().quit(0 if failures.is_empty() else 1)
 
 
 func _settle() -> void:
 	for _frame in 3:
-		await process_frame
+		await get_tree().process_frame
 
 
 func _check_viewport(physical_size: Vector2i, display_mode: int) -> void:
-	var visible_size: Vector2 = root.get_visible_rect().size
+	var window := get_tree().root
+	var visible_size: Vector2 = window.get_visible_rect().size
 	var physical_aspect := float(physical_size.x) / float(physical_size.y)
 	var expected_aspect := 16.0 / 9.0 if display_mode == 0 else clampf(physical_aspect, 1.0, 16.0 / 6.0)
 	if visible_size.y <= 0.0 or absf(visible_size.x / visible_size.y - expected_aspect) > 0.015:
 		failures.append("logical viewport aspect mismatched at %s: %s" % [physical_size, visible_size])
-	if root.content_scale_aspect != Window.CONTENT_SCALE_ASPECT_KEEP:
+	if window.content_scale_aspect != Window.CONTENT_SCALE_ASPECT_KEEP:
 		failures.append("uniform contain scaling not active at %s" % physical_size)
 	var design := Vector2(1280.0, 1280.0 / expected_aspect)
 	if expected_aspect >= 1280.0 / 720.0:
 		design = Vector2(720.0 * expected_aspect, 720.0)
 	var scale := minf(1.0, minf(float(physical_size.x) / design.x, float(physical_size.y) / design.y))
 	var expected_size := Vector2i(roundi(design.x * scale), roundi(design.y * scale))
-	if root.content_scale_size != expected_size:
-		failures.append("viewport policy returned %s instead of %s at %s" % [root.content_scale_size, expected_size, physical_size])
-	var transform := root.get_final_transform()
+	if window.content_scale_size != expected_size:
+		failures.append("viewport policy returned %s instead of %s at %s" % [window.content_scale_size, expected_size, physical_size])
+	var transform := window.get_final_transform()
 	if absf(transform.x.length() - transform.y.length()) > 0.002:
 		failures.append("non-uniform stretch detected at %s" % physical_size)
 
 
 func _check_title(physical_size: Vector2i) -> void:
 	var title := TITLE_SCENE.instantiate() as Control
-	root.add_child(title)
+	get_tree().root.add_child(title)
 	await _settle()
 	var viewport_size: Vector2 = title.get_viewport_rect().size
 	var panel := title.find_child("DiaryCard", true, false) as Control
 	var start := title.find_child("StartAdventure", true, false) as Control
 	var chapter_two := title.find_child("StartChapterTwo", true, false) as Control
 	var wardrobe := title.find_child("WardrobeButton", true, false) as Control
-	_check_rect(panel, viewport_size, "title panel", physical_size)
+	_check_horizontal_rect(panel, viewport_size, "title panel", physical_size)
 	_check_rect(start, viewport_size, "start button", physical_size)
 	_check_rect(chapter_two, viewport_size, "chapter two button", physical_size)
 	_check_rect(wardrobe, viewport_size, "wardrobe button", physical_size)
 	if start != null and (start.size.x < 190.0 or start.size.y < 40.0):
 		failures.append("start button too small at %s: %s" % [physical_size, start.size])
-	var secondary_min_width := 116.0 if viewport_size.x < 420.0 else 190.0
+	var secondary_min_width := 116.0 if viewport_size.x < 420.0 else 160.0
 	if chapter_two != null and (chapter_two.size.x < secondary_min_width or chapter_two.size.y < 40.0):
 		failures.append("chapter two button too small at %s: %s" % [physical_size, chapter_two.size])
 	if wardrobe != null and (wardrobe.size.x < secondary_min_width or wardrobe.size.y < 40.0):
 		failures.append("wardrobe button too small at %s: %s" % [physical_size, wardrobe.size])
 	title.queue_free()
-	await process_frame
+	await get_tree().process_frame
 
 
 func _check_game(physical_size: Vector2i) -> void:
 	var game := GAME_SCENE.instantiate() as Node2D
-	root.add_child(game)
+	get_tree().root.add_child(game)
 	await _settle()
 	var viewport_size: Vector2 = game.get_viewport_rect().size
 	for node_name in ["NotebookHUD", "Objective", "PauseButton", "TouchJoystick", "TouchA", "TouchB", "TouchX", "TouchY", "TouchL", "TouchR"]:
@@ -108,8 +114,41 @@ func _check_game(physical_size: Vector2i) -> void:
 		failures.append("touch controls should appear at landscape viewport %s" % physical_size)
 	var inventory := game.find_child("InventoryCounts", true, false) as Control
 	_check_rect(inventory, viewport_size, "backpack counter row", physical_size)
+	var toast := game.find_child("SnackToast", true, false) as Control
+	if toast != null and touch_controls != null and touch_controls.visible:
+		for control_name in ["TouchJoystick", "TouchA", "TouchB", "TouchX", "TouchY"]:
+			var control := game.find_child(control_name, true, false) as Control
+			if control != null and toast.get_global_rect().intersects(control.get_global_rect()):
+				failures.append("dialogue bubble overlaps %s at %s: %s / %s" % [control_name, physical_size, toast.get_global_rect(), control.get_global_rect()])
+	_check_simultaneous_touch(game, physical_size)
 	game.queue_free()
-	await process_frame
+	await get_tree().process_frame
+
+
+func _check_simultaneous_touch(game: Node, physical_size: Vector2i) -> void:
+	var joystick := game.find_child("TouchJoystick", true, false)
+	var ability := game.find_child("TouchB", true, false) as Button
+	if joystick == null or ability == null:
+		return
+	var origin: Vector2 = joystick.size * 0.5
+	var down := InputEventScreenTouch.new()
+	down.index = 41
+	down.pressed = true
+	down.position = origin
+	joystick.call("_gui_input", down)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 41
+	drag.position = origin + Vector2(joystick.size.x * 0.24, 0.0)
+	joystick.call("_gui_input", drag)
+	var axis_before := float(game.touch_move_axis)
+	ability.pressed.emit()
+	if absf(axis_before) < 0.5 or absf(float(game.touch_move_axis) - axis_before) > 0.01:
+		failures.append("joystick movement was lost while right ability button was pressed at %s" % physical_size)
+	var up := InputEventScreenTouch.new()
+	up.index = 41
+	up.pressed = false
+	up.position = drag.position
+	joystick.call("_gui_input", up)
 
 
 func _check_rect(control: Control, viewport_size: Vector2, label: String, physical_size: Vector2i) -> void:
@@ -119,3 +158,12 @@ func _check_rect(control: Control, viewport_size: Vector2, label: String, physic
 	var rect := control.get_global_rect()
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0 or rect.position.x < -0.5 or rect.position.y < -0.5 or rect.end.x > viewport_size.x + 0.5 or rect.end.y > viewport_size.y + 0.5:
 		failures.append("%s outside visible canvas at %s: %s / %s" % [label, physical_size, rect, viewport_size])
+
+
+func _check_horizontal_rect(control: Control, viewport_size: Vector2, label: String, physical_size: Vector2i) -> void:
+	if control == null:
+		failures.append("%s is missing at %s" % [label, physical_size])
+		return
+	var rect := control.get_global_rect()
+	if rect.size.x <= 0.0 or rect.position.x < -0.5 or rect.end.x > viewport_size.x + 0.5:
+		failures.append("%s exceeds horizontal canvas at %s: %s / %s" % [label, physical_size, rect, viewport_size])

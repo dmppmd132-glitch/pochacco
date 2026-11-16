@@ -1385,7 +1385,7 @@ func _layout_hud() -> void:
 	if hud_root == null:
 		return
 	var view_size := get_viewport_rect().size
-	var narrow := view_size.x < 560.0
+	var narrow := view_size.x < 700.0
 	if is_instance_valid(objective_label):
 		objective_label.offset_left = 325.0 if not narrow else 304.0
 		objective_label.offset_right = -86.0
@@ -1394,7 +1394,9 @@ func _layout_hud() -> void:
 		objective_label.add_theme_font_size_override("font_size", 14 if narrow else 17)
 	if is_instance_valid(toast_label):
 		toast_label.offset_left = 18.0 if narrow else 80.0
-		toast_label.offset_right = -18.0 if narrow else -80.0
+		# Keep the compact dialogue bubble clear of the first column of the
+		# right-side ability diamond (especially Y on 16:9 phone viewports).
+		toast_label.offset_right = -132.0 if narrow else -80.0
 		toast_label.offset_top = 112.0 if narrow else 124.0
 		toast_label.offset_bottom = maxf(toast_label.offset_top + 44.0, minf(204.0, view_size.y - 12.0))
 		toast_label.add_theme_font_size_override("font_size", 14 if narrow else 20)
