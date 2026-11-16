@@ -15,13 +15,19 @@ test('chapter three gear controller parses in Godot', () => {
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 
-test('chapter three graybox declares three fixed gear routes and a five-second brake', () => {
+test('chapter three graybox declares data-driven gear routes and a five-second brake', () => {
   const source = read('scripts/chapter_three.gd');
-  assert.match(source, /_add_gear\("廣場齒輪"/);
-  assert.match(source, /_add_gear\("工坊齒輪"/);
-  assert.match(source, /_add_gear\("鐘樓外環"/);
+  assert.match(source, /const GEAR_SPECS := \[/);
+  assert.match(source, /\{"id": "廣場齒輪"/);
+  assert.match(source, /\{"id": "工坊齒輪"/);
+  assert.match(source, /\{"id": "鐘樓外環"/);
+  assert.match(source, /const INTERACTION_SPECS := \[/);
+  assert.match(source, /\{"id": "鐘樓黃銅鈴", "action": "reverse", "gear_id": "鐘樓外環"/);
+  assert.match(source, /_gear_by_id\(String\(node\["gear_id"\]\)\)/);
   assert.match(source, /gear\.brake_for\(5\.0\)/);
   assert.match(source, /func reverse_direction\(\)/);
+  assert.doesNotMatch(source, /return reverse_near\(1090\.0\)/);
+  assert.doesNotMatch(source, /return reverse_near\(2670\.0\)/);
 });
 
 test('chapter three is reachable from the title and main game flow', () => {

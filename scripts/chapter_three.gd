@@ -13,6 +13,20 @@ var core_unlocked := false
 var core_restored := false
 var brake_count := 0
 
+const GEAR_SPECS := [
+	{"id": "廣場齒輪", "position": Vector2(690.0, 500.0), "left_x": 520.0, "right_x": 900.0, "speed": 118.0, "linked_group_id": "square_route", "next_dock_marker": "廣場入口", "checkpoint_id": "ch3_square"},
+	{"id": "工坊齒輪", "position": Vector2(1900.0, 430.0), "left_x": 1600.0, "right_x": 2260.0, "speed": 132.0, "linked_group_id": "workshop_pair", "next_dock_marker": "雙齒輪工坊", "checkpoint_id": "ch3_workshop"},
+	{"id": "鐘樓外環", "position": Vector2(3230.0, 365.0), "left_x": 2860.0, "right_x": 3670.0, "speed": 148.0, "linked_group_id": "tower_route", "next_dock_marker": "鐘樓外環安全窗", "checkpoint_id": "ch3_tower"},
+]
+
+const INTERACTION_SPECS := [
+	{"id": "廣場黃銅鈴", "action": "reverse", "gear_id": "廣場齒輪", "x": 1090.0, "radius": 130.0},
+	{"id": "工坊煞車踏板", "action": "brake", "gear_id": "工坊齒輪", "x": 2670.0, "radius": 140.0},
+	{"id": "鐘樓黃銅鈴", "action": "reverse", "gear_id": "鐘樓外環", "x": 3920.0, "radius": 150.0},
+]
+
+var interaction_nodes: Array[Dictionary] = []
+
 class GearPlatform extends AnimatableBody2D:
 	var size := Vector2(300.0, 30.0)
 	var left_x := 0.0
@@ -22,6 +36,11 @@ class GearPlatform extends AnimatableBody2D:
 	var paused_time := 0.0
 	var phase := 0.0
 	var gear_id := ""
+	var linked_group_id := ""
+	var brake_target := ""
+	var next_dock_marker := ""
+	var checkpoint_id := ""
+	var gear_phase := "cruise"
 	var interaction_enabled := true
 
 	func _ready() -> void:
@@ -51,14 +70,27 @@ class GearPlatform extends AnimatableBody2D:
 
 	func reverse_direction() -> void:
 		direction *= -1.0
+		gear_phase = "reversing"
 		queue_redraw()
 
 	func brake_for(seconds: float) -> void:
 		paused_time = maxf(paused_time, seconds)
+		brake_target = gear_id
+		gear_phase = "braked"
 		queue_redraw()
 
 	func is_braked() -> bool:
 		return paused_time > 0.0
+
+	func configure(spec: Dictionary) -> void:
+		gear_id = String(spec.get("id", ""))
+		position = spec.get("position", Vector2.ZERO)
+		left_x = float(spec.get("left_x", position.x))
+		right_x = float(spec.get("right_x", position.x))
+		speed = float(spec.get("speed", speed))
+		linked_group_id = String(spec.get("linked_group_id", ""))
+		next_dock_marker = String(spec.get("next_dock_marker", ""))
+		checkpoint_id = String(spec.get("checkpoint_id", ""))
 
 	func _draw() -> void:
 		var bounds := Rect2(-size * 0.5, size)
@@ -76,6 +108,7 @@ class GearPlatform extends AnimatableBody2D:
 func setup(controller_game) -> void:
 	game = controller_game
 	_build_gears()
+	_build_interaction_nodes()
 	_build_steam_vents()
 	_build_guardian()
 	queue_redraw()
@@ -142,73 +175,76 @@ func suppress_vent_near(at_x: float) -> bool:
 		game.show_toast("蒸汽閥被嘟嘟壓住 2.4 秒！趁安全窗口通過。")
 	return suppressed
 func _build_gears() -> void:
-	_add_gear("廣場齒輪", Vector2(690, 500), 520.0, 900.0, 118.0)
-	_add_gear("工坊齒輪", Vector2(1900, 430), 1600.0, 2260.0, 132.0)
-	_add_gear("鐘樓外環", Vector2(3230, 365), 2860.0, 3670.0, 148.0)
+	for spec in GEAR_SPECS:
+		_add_gear(spec)
 
-func _add_gear(id: String, at: Vector2, left_x: float, right_x: float, speed_value: float) -> void:
+func _build_interaction_nodes() -> void:
+	interaction_nodes.clear()
+	for spec in INTERACTION_SPECS:
+		interaction_nodes.append(spec.duplicate(true))
+
+func _add_gear(spec: Dictionary) -> void:
 	var gear := GearPlatform.new()
-	gear.name = id
-	gear.gear_id = id
-	gear.position = at
-	gear.left_x = left_x
-	gear.right_x = right_x
-	gear.speed = speed_value
+	gear.name = String(spec["id"])
+	gear.configure(spec)
 	add_child(gear)
 	gears.append(gear)
 
 func reverse_near(at_x: float) -> bool:
-	var gear := _nearest_gear(at_x)
-	if gear == null or absf(gear.position.x - at_x) > 260.0:
+	var node := _nearest_interaction(at_x, "reverse")
+	if node.is_empty():
+		return false
+	var gear := _gear_by_id(String(node["gear_id"]))
+	if gear == null:
 		return false
 	gear.reverse_direction()
 	bell_active = true
-	game.show_toast("黃銅鈴響了！齒輪改變方向，觀察外圈箭頭找安全路線。")
+	game.show_toast("黃銅鈴響了！%s 改變方向，觀察外圈箭頭找安全路線。" % gear.gear_id)
 	game._update_objective()
 	return true
 
 func brake_near(at_x: float) -> bool:
-	var gear := _nearest_gear(at_x)
-	if gear == null or absf(gear.position.x - at_x) > 220.0:
+	var node := _nearest_interaction(at_x, "brake")
+	if node.is_empty():
+		return false
+	var gear := _gear_by_id(String(node["gear_id"]))
+	if gear == null:
 		return false
 	gear.brake_for(5.0)
 	brake_count += 1
-	game.show_toast("煞車踏板卡住齒輪 5 秒！趁停靠記號對齊時跳上去。")
+	game.show_toast("煞車踏板卡住 %s 5 秒！趁停靠記號對齊時跳上去。" % gear.gear_id)
 	game._update_objective()
 	return true
 
 func on_boomerang_hit(at_position: Vector2) -> bool:
 	if is_instance_valid(guardian) and guardian.on_boomerang_hit(at_position):
 		return true
-	var at_x := at_position.x
-	if at_x > 1030.0 and at_x < 1160.0:
-		return reverse_near(1090.0)
-	if at_x > 2580.0 and at_x < 2760.0:
-		return reverse_near(2670.0)
-	return false
+	return reverse_near(at_position.x)
 
 func on_ground_pound(at_position: Vector2, is_dudu: bool) -> bool:
 	if is_instance_valid(guardian) and absf(at_position.x - guardian.global_position.x) < 150.0:
 		return guardian.on_ground_pound(at_position, is_dudu)
 	if suppress_vent_near(at_position.x):
 		return true
-	if at_position.x > 980.0 and at_position.x < 1200.0:
-		brake_near(1090.0)
-		return true
-	if at_position.x > 2500.0 and at_position.x < 2800.0:
-		brake_near(2670.0)
-		return true
-	return false
+	return brake_near(at_position.x)
 
-func _nearest_gear(at_x: float) -> GearPlatform:
-	var nearest: GearPlatform
+func _nearest_interaction(at_x: float, action: String) -> Dictionary:
+	var nearest := {}
 	var distance := INF
-	for gear in gears:
-		var current_distance := absf(gear.position.x - at_x)
-		if current_distance < distance:
-			nearest = gear
-			distance = current_distance
+	for node in interaction_nodes:
+		if String(node.get("action", "")) != action:
+			continue
+		var node_distance := absf(float(node.get("x", 0.0)) - at_x)
+		if node_distance <= float(node.get("radius", 0.0)) and node_distance < distance:
+			nearest = node
+			distance = node_distance
 	return nearest
+
+func _gear_by_id(gear_id: String) -> GearPlatform:
+	for gear in gears:
+		if gear.gear_id == gear_id:
+			return gear
+	return null
 
 func mark_core_restored() -> void:
 	if not core_unlocked or core_restored:
