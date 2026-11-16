@@ -15,13 +15,16 @@ var brake_count := 0
 
 const GEAR_SPECS := [
 	{"id": "廣場齒輪", "position": Vector2(690.0, 500.0), "left_x": 520.0, "right_x": 900.0, "speed": 118.0, "linked_group_id": "square_route", "next_dock_marker": "廣場入口", "checkpoint_id": "ch3_square"},
-	{"id": "工坊齒輪", "position": Vector2(1900.0, 430.0), "left_x": 1600.0, "right_x": 2260.0, "speed": 132.0, "linked_group_id": "workshop_pair", "next_dock_marker": "雙齒輪工坊", "checkpoint_id": "ch3_workshop"},
+	{"id": "工坊齒輪", "position": Vector2(1900.0, 430.0), "left_x": 1600.0, "right_x": 2260.0, "speed": 132.0, "initial_direction": 1.0, "linked_group_id": "workshop_pair", "next_dock_marker": "工坊低位停靠點", "checkpoint_id": "ch3_workshop_low"},
+	{"id": "工坊高位齒輪", "position": Vector2(2220.0, 320.0), "left_x": 1960.0, "right_x": 2500.0, "speed": 132.0, "initial_direction": -1.0, "linked_group_id": "workshop_pair", "next_dock_marker": "工坊高位安全落點", "checkpoint_id": "ch3_workshop_high"},
 	{"id": "鐘樓外環", "position": Vector2(3230.0, 365.0), "left_x": 2860.0, "right_x": 3670.0, "speed": 148.0, "linked_group_id": "tower_route", "next_dock_marker": "鐘樓外環安全窗", "checkpoint_id": "ch3_tower"},
 ]
 
 const INTERACTION_SPECS := [
 	{"id": "廣場黃銅鈴", "action": "reverse", "gear_id": "廣場齒輪", "x": 1090.0, "radius": 130.0},
+	{"id": "工坊黃銅鈴", "action": "reverse", "gear_id": "工坊齒輪", "x": 1500.0, "radius": 150.0},
 	{"id": "工坊煞車踏板", "action": "brake", "gear_id": "工坊齒輪", "x": 2670.0, "radius": 140.0},
+	{"id": "工坊高位煞車踏板", "action": "brake", "gear_id": "工坊高位齒輪", "x": 2450.0, "radius": 140.0},
 	{"id": "鐘樓黃銅鈴", "action": "reverse", "gear_id": "鐘樓外環", "x": 3920.0, "radius": 150.0},
 ]
 
@@ -34,15 +37,16 @@ class GearPlatform extends AnimatableBody2D:
 	var direction := 1.0
 	var speed := 110.0
 	var paused_time := 0.0
+	var brake_remaining := 0.0
 	var phase := 0.0
 	var gear_id := ""
 	var linked_group_id := ""
 	var brake_target := ""
 	var next_dock_marker := ""
 	var checkpoint_id := ""
-	var gear_phase := "cruise"
+	var gear_phase := 0.0
+	var motion_delta := Vector2.ZERO
 	var interaction_enabled := true
-
 	func _ready() -> void:
 		collision_layer = 1
 		collision_mask = 0
@@ -56,31 +60,47 @@ class GearPlatform extends AnimatableBody2D:
 		queue_redraw()
 
 	func _physics_process(delta: float) -> void:
+		advance_motion(delta)
+
+	func advance_motion(delta: float) -> void:
+		motion_delta = Vector2.ZERO
+		if delta <= 0.0:
+			return
 		phase += delta * direction
-		if paused_time > 0.0:
-			paused_time = maxf(0.0, paused_time - delta)
+		if brake_remaining > 0.0:
+			brake_remaining = maxf(0.0, brake_remaining - delta)
+			paused_time = brake_remaining
+			if brake_remaining <= 0.0:
+				brake_target = ""
+				gear_phase = _normalized_phase()
 			queue_redraw()
 			return
+		var previous_position := position
 		var next_x := position.x + direction * speed * delta
 		if next_x <= left_x or next_x >= right_x:
 			next_x = clampf(next_x, left_x, right_x)
 			direction *= -1.0
 		position.x = next_x
+		motion_delta = position - previous_position
+		gear_phase = _normalized_phase()
 		queue_redraw()
 
 	func reverse_direction() -> void:
 		direction *= -1.0
-		gear_phase = "reversing"
+		gear_phase = _normalized_phase()
 		queue_redraw()
 
 	func brake_for(seconds: float) -> void:
-		paused_time = maxf(paused_time, seconds)
+		brake_remaining = maxf(brake_remaining, seconds)
+		paused_time = brake_remaining
 		brake_target = gear_id
-		gear_phase = "braked"
 		queue_redraw()
 
 	func is_braked() -> bool:
-		return paused_time > 0.0
+		return brake_remaining > 0.0
+
+	func _normalized_phase() -> float:
+		return inverse_lerp(left_x, right_x, position.x)
 
 	func configure(spec: Dictionary) -> void:
 		gear_id = String(spec.get("id", ""))
@@ -88,9 +108,11 @@ class GearPlatform extends AnimatableBody2D:
 		left_x = float(spec.get("left_x", position.x))
 		right_x = float(spec.get("right_x", position.x))
 		speed = float(spec.get("speed", speed))
+		direction = float(spec.get("initial_direction", direction))
 		linked_group_id = String(spec.get("linked_group_id", ""))
 		next_dock_marker = String(spec.get("next_dock_marker", ""))
 		checkpoint_id = String(spec.get("checkpoint_id", ""))
+		gear_phase = _normalized_phase()
 
 	func _draw() -> void:
 		var bounds := Rect2(-size * 0.5, size)
@@ -175,6 +197,7 @@ func suppress_vent_near(at_x: float) -> bool:
 		game.show_toast("蒸汽閥被嘟嘟壓住 2.4 秒！趁安全窗口通過。")
 	return suppressed
 func _build_gears() -> void:
+	gears.clear()
 	for spec in GEAR_SPECS:
 		_add_gear(spec)
 
@@ -197,9 +220,9 @@ func reverse_near(at_x: float) -> bool:
 	var gear := _gear_by_id(String(node["gear_id"]))
 	if gear == null:
 		return false
-	gear.reverse_direction()
+	_reverse_linked_group(gear.linked_group_id)
 	bell_active = true
-	game.show_toast("黃銅鈴響了！%s 改變方向，觀察外圈箭頭找安全路線。" % gear.gear_id)
+	game.show_toast("黃銅鈴響了！%s 群組改變方向，下一個停靠點：%s。" % [gear.linked_group_id, gear.next_dock_marker])
 	game._update_objective()
 	return true
 
@@ -245,6 +268,11 @@ func _gear_by_id(gear_id: String) -> GearPlatform:
 		if gear.gear_id == gear_id:
 			return gear
 	return null
+
+func _reverse_linked_group(group_id: String) -> void:
+	for gear in gears:
+		if gear.linked_group_id == group_id:
+			gear.reverse_direction()
 
 func mark_core_restored() -> void:
 	if not core_unlocked or core_restored:

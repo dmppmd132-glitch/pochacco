@@ -897,6 +897,7 @@ func _build_gear_world() -> void:
 	_add_platform(320, 555, 240, 24, "chiffon")
 	_add_platform(1280, 470, 190, 24, "biscuit")
 	_add_platform(2420, 390, 190, 24, "chiffon")
+	_add_platform(2280, 350, 150, 24, "chiffon")
 	var risk_entry = _add_platform(2630, 425, 210, 24, "biscuit")
 	risk_entry.set_meta("route_id", "high_risk")
 	var safe_a = _add_platform(2860, 550, 220, 24, "wafer")
@@ -2193,6 +2194,9 @@ func fall_to_safety(_buddy: Buddy) -> void:
 		elif fall_x > 2700.0 and checkpoint_x < 2700.0:
 			checkpoint_x = 2860.0
 			show_toast("發條工坊檢查點已記下！回到鐘樓分岔前的安全平台。")
+		elif fall_x > 2200.0 and checkpoint_x < 2200.0:
+			checkpoint_x = 2240.0
+			show_toast("雙齒輪高位落點已記下！從工坊安全平台繼續。")
 		elif fall_x > 1320.0 and checkpoint_x < 1320.0:
 			checkpoint_x = 1500.0
 			show_toast("齒輪廣場檢查點已記下！從最近安全處繼續。")
@@ -2201,7 +2205,6 @@ func fall_to_safety(_buddy: Buddy) -> void:
 	if damage_cooldown > 0.0 or run_over:
 		return
 	_damage_and_return("噗通！跌進果醬旁的棉花軟墊，回到最近安全處。", true)
-
 
 func _damage_and_return(message: String, return_both: bool) -> void:
 	if damage_cooldown > 0.0:
@@ -2274,6 +2277,9 @@ func on_buddy_moved_checkpoint_check() -> void:
 		if active.global_position.x > 3860.0 and checkpoint_x < 3860.0:
 			checkpoint_x = 3940.0
 			show_toast("安全／高風險路線已匯合，鐘樓檢查點已記下！")
+		elif active.global_position.x > 2200.0 and checkpoint_x < 2200.0:
+			checkpoint_x = 2240.0
+			show_toast("雙齒輪高位落點已記下！從工坊安全平台繼續。")
 		return
 	if chapter_index == 2:
 		if active.global_position.x > 1450.0 and checkpoint_x < 1450.0:
@@ -2289,7 +2295,6 @@ func on_buddy_moved_checkpoint_check() -> void:
 	elif active.global_position.x > 3440.0 and checkpoint_x < 3440.0:
 		checkpoint_x = 3480.0
 		show_toast("吊橋另一端安全！接著對付哼哼奶油怪。")
-
 
 func play_boss_cue(cue: StringName) -> void:
 	var audio := get_node_or_null("/root/GameAudio")

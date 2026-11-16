@@ -20,10 +20,15 @@ test('chapter three graybox declares data-driven gear routes and a five-second b
   assert.match(source, /const GEAR_SPECS := \[/);
   assert.match(source, /\{"id": "廣場齒輪"/);
   assert.match(source, /\{"id": "工坊齒輪"/);
+  assert.match(source, /\{"id": "工坊高位齒輪"/);
   assert.match(source, /\{"id": "鐘樓外環"/);
   assert.match(source, /const INTERACTION_SPECS := \[/);
   assert.match(source, /\{"id": "鐘樓黃銅鈴", "action": "reverse", "gear_id": "鐘樓外環"/);
   assert.match(source, /_gear_by_id\(String\(node\["gear_id"\]\)\)/);
+  assert.match(source, /_reverse_linked_group\(gear\.linked_group_id\)/);
+  assert.match(source, /var brake_remaining := 0\.0/);
+  assert.match(source, /var motion_delta := Vector2\.ZERO/);
+  assert.match(source, /sync_to_physics = true/);
   assert.match(source, /gear\.brake_for\(5\.0\)/);
   assert.match(source, /func reverse_direction\(\)/);
   assert.doesNotMatch(source, /return reverse_near\(1090\.0\)/);
@@ -77,4 +82,11 @@ test('chapter three keeps the optional high-risk route and three-star bonus dist
   assert.equal([...game.matchAll(/_add_star\(Vector2\(\d+, \d+\), "high_risk"\)/g)].length, 5);
   assert.equal([...game.matchAll(/_add_star\(Vector2\(\d+, \d+\), "safe"\)/g)].length, 2);
   assert.match(game, /checkpoint_x = 3940\.0/);
+});
+
+test('chapter three workshop exposes a high-gear landing platform and recovery checkpoint', () => {
+  const game = read('scripts/snackisle_game.gd');
+  assert.match(game, /_add_platform\(2280, 350, 150, 24, "chiffon"\)/);
+  assert.match(game, /checkpoint_x = 2240\.0/);
+  assert.match(game, /雙齒輪高位落點已記下/);
 });
