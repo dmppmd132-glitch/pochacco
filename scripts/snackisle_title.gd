@@ -136,6 +136,13 @@ func _build_title() -> void:
 	wardrobe_button.name = "WardrobeButton"
 	wardrobe_button.pressed.connect(_open_wardrobe)
 	secondary_actions.add_child(wardrobe_button)
+	var chapter_four_button := _make_button("試玩第四章｜月潮玻璃海", false)
+	chapter_four_button.name = "StartChapterFour"
+	chapter_four_button.custom_minimum_size = Vector2(0.0, 48.0)
+	chapter_four_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chapter_four_button.add_theme_font_size_override("font_size", 16)
+	chapter_four_button.pressed.connect(_start_chapter_four)
+	stack.add_child(chapter_four_button)
 	var footer := Label.new()
 	footer.name = "FooterHint"
 	footer.text = _l10n("粉紅大福 × 香蕉上衣 × 星星糖")
@@ -239,6 +246,7 @@ func _layout_title() -> void:
 	var chapter_two_button := title_panel.find_child("StartChapterTwo", true, false) as Button
 	var chapter_three_button := title_panel.find_child("StartChapterThree", true, false) as Button
 	var wardrobe_button := title_panel.find_child("WardrobeButton", true, false) as Button
+	var chapter_four_button := title_panel.find_child("StartChapterFour", true, false) as Button
 	var secondary_actions := title_panel.find_child("SecondaryActions", true, false) as HBoxContainer
 	if secondary_actions != null:
 		var gap := 6 if compact else 8
@@ -256,6 +264,12 @@ func _layout_title() -> void:
 		chapter_three_button.text = _l10n("第三章") if compact else _l10n("試玩第三章｜齒輪城")
 	if wardrobe_button != null:
 		wardrobe_button.text = _l10n("衣櫃") if compact else _l10n("衣櫃換裝")
+	if chapter_four_button != null:
+		chapter_four_button.text = _l10n("第四章") if compact else _l10n("試玩第四章｜月潮玻璃海")
+		var chapter_four_width := title_panel.custom_minimum_size.x - (28.0 if compact else 44.0)
+		chapter_four_button.custom_minimum_size = Vector2(chapter_four_width, 38 if compact else 46)
+		chapter_four_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		chapter_four_button.add_theme_font_size_override("font_size", 13 if compact else 16)
 
 
 func _l10n(value: String, placeholders: Dictionary = {}) -> String:
@@ -275,6 +289,12 @@ func _start_chapter_two() -> void:
 func _start_chapter_three() -> void:
 	GameAudio.begin_game()
 	get_tree().set_meta("snackisle_chapter", 3)
+	get_tree().change_scene_to_file("res://scenes/game.tscn")
+
+
+func _start_chapter_four() -> void:
+	GameAudio.begin_game()
+	get_tree().set_meta("snackisle_chapter", 4)
 	get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 func _open_wardrobe() -> void:
