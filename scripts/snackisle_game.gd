@@ -34,6 +34,7 @@ const POCHACCO_VICTORY_FRAMES: Array[Texture2D] = [POCHACCO_VICTORY_POSE]
 const GAME_FONT: Font = preload("res://assets/template/fonts/ui_regular.tres")
 const CHAPTER_THREE_CONTROLLER: Script = preload("res://scripts/chapter_three.gd")
 const CHAPTER_FOUR_CONTROLLER: Script = preload("res://scripts/chapter_four.gd")
+const TIDAL_JELLYFISH_BOSS: Script = preload("res://scripts/tidal_jellyfish_boss.gd")
 const WORLD_WIDTH := 5200.0
 const GROUND_Y := 620.0
 const BACKGROUND_REDRAW_INTERVAL := 1.0 / 30.0
@@ -62,8 +63,10 @@ const POCHACCO_AIR_ACCELERATION := 1050.0
 var chapter_index := 1
 var chapter_three
 var chapter_four
+var chapter_four_boss
 var chapter_four_gate
 var chapter_four_mirror_gate
+var chapter_four_boss_gate
 var cloud_windmill_active := false
 var cloud_gate
 var cloud_windmill_x := 1650.0
@@ -79,6 +82,7 @@ var stars_label: Label
 var ingredients_label: Label
 var chapter_label: Label
 var objective_label: Label
+var boss_progress_label: Label
 var toast_label: Label
 var bridge_platform
 var team_gate
@@ -107,6 +111,8 @@ var team_hug_time := 0.0
 var plate_pressed := false
 var plate_hint_sent := false
 var boss_defeated := false
+var chapter_four_run_id := ""
+var chapter_four_reward_saved := false
 var boss_exposed_time := 0.0
 var boss_hitstop_time := 0.0
 var boss_shake_time := 0.0
@@ -553,6 +559,8 @@ class Buddy extends CharacterBody2D:
 			velocity.x = move_toward(velocity.x, direction * speed, ground_acceleration() * delta)
 		else:
 			velocity.x = move_toward(velocity.x, 0.0, ground_friction() * delta)
+		if game.chapter_index == 4 and is_instance_valid(game.chapter_four_boss):
+			velocity.x = clampf(velocity.x + game.chapter_four_boss.tide_force(global_position) * delta, -speed * 1.35, speed * 1.35)
 		var incoming_y := velocity.y
 		move_and_slide()
 		if global_position.y > 820.0:
@@ -737,12 +745,13 @@ class Buddy extends CharacterBody2D:
 
 func _ready() -> void:
 	chapter_index = clampi(int(get_tree().get_meta("snackisle_chapter", 1)), 1, 4)
+	chapter_four_run_id = "moon-%d-%d" % [Time.get_ticks_usec(), randi()] if chapter_index == 4 else ""
 	_ensure_input_actions()
 	build_world()
 	spawn_buddies()
 	build_camera()
 	build_hud()
-	show_toast("月潮玻璃海：先聽珊瑚鐘音序，再用帕恰狗迴旋鏢重現節拍。" if chapter_index == 4 else (_l10n("章二開場提示") if chapter_index == 2 else ("齒輪城的鐘芯停擺了！先在齒輪廣場觀察箭頭，再讓帕恰狗敲鈴換向。" if chapter_index == 3 else "怪盜喵嗚偷走了噴泉閥門！沿地面靠近戚風蛋糕，再讓嘟嘟跳上去收集星星糖。")))
+	show_toast("月潮玻璃海：修好回音與月光，再循安全岸道前往潮汐水母王。支線糖果可選。" if chapter_index == 4 else (_l10n("章二開場提示") if chapter_index == 2 else ("齒輪城的鐘芯停擺了！先在齒輪廣場觀察箭頭，再讓帕恰狗敲鈴換向。" if chapter_index == 3 else "怪盜喵嗚偷走了噴泉閥門！沿地面靠近戚風蛋糕，再讓嘟嘟跳上去收集星星糖。")))
 	_update_objective()
 	queue_redraw()
 
@@ -937,24 +946,45 @@ func _build_gear_world() -> void:
 
 
 func _build_moon_tide_world() -> void:
-	_add_platform(660.0, GROUND_Y, 1320.0, 220.0, "mint")
+	_add_platform(0.0, GROUND_Y, 1980.0, 220.0, "mint")
 	_add_platform(1960.0, GROUND_Y, 1060.0, 220.0, "wafer")
-	_add_platform(3890.0, GROUND_Y, 2620.0, 220.0, "mint")
+	_add_platform(2580.0, GROUND_Y, 1320.0, 220.0, "mint")
+	_add_platform(3890.0, GROUND_Y, 1310.0, 220.0, "mint")
 	_add_platform(610.0, 520.0, 210.0, 24.0, "cloud")
 	_add_platform(880.0, 465.0, 190.0, 24.0, "wafer")
 	_add_platform(1640.0, 520.0, 200.0, 24.0, "cloud")
 	_add_platform(2160.0, 520.0, 230.0, 24.0, "wafer")
 	_add_platform(2420.0, 420.0, 210.0, 24.0, "cloud")
+	# Optional, elevated reef route: three clearly marked candies, with the safe floor below.
+	for platform_data in [[2750.0, 515.0, 150.0], [2980.0, 468.0, 130.0], [3210.0, 444.0, 125.0], [3445.0, 474.0, 130.0], [3670.0, 520.0, 150.0]]:
+		var reef_step: Node2D = _add_platform(platform_data[0], platform_data[1], platform_data[2], 22.0, "chiffon")
+		reef_step.set_meta("route_id", "optional_moon_sugars")
+	for safe_data in [[2820.0, 565.0, 220.0], [3160.0, 565.0, 240.0], [3500.0, 565.0, 240.0], [3780.0, 548.0, 220.0]]:
+		var safe_step: Node2D = _add_platform(safe_data[0], safe_data[1], safe_data[2], 20.0, "mint")
+		safe_step.set_meta("route_id", "safe")
+	# Raised, broad pads are the readable ground-wave refuges in the boss room.
+	_add_platform(4328.0, 560.0, 112.0, 20.0, "cloud")
+	_add_platform(4772.0, 560.0, 112.0, 20.0, "cloud")
 	chapter_four_gate = _add_barrier(1390.0, GROUND_Y - 110.0, Vector2(36.0, 220.0), "chapter_four_gate")
 	chapter_four_mirror_gate = _add_barrier(2520.0, GROUND_Y - 110.0, Vector2(36.0, 220.0), "chapter_four_gate")
+	chapter_four_boss_gate = _add_barrier(4840.0, GROUND_Y - 110.0, Vector2(38.0, 220.0), "chapter_four_boss_gate")
 	chapter_four = CHAPTER_FOUR_CONTROLLER.new()
 	chapter_four.name = "ChapterFourMechanicsController"
 	add_child(chapter_four)
 	chapter_four.setup(self)
 	chapter_four.echo_gate = chapter_four_gate
 	chapter_four.mirror_gate = chapter_four_mirror_gate
+	chapter_four_boss = TIDAL_JELLYFISH_BOSS.new()
+	chapter_four_boss.name = "TidalJellyfishBoss"
+	add_child(chapter_four_boss)
+	chapter_four_boss.setup(self, Vector2(4550.0, GROUND_Y - 70.0))
 	for point in [Vector2(400.0, 540.0), Vector2(650.0, 478.0), Vector2(830.0, 415.0), Vector2(1190.0, 545.0), Vector2(1580.0, 540.0), Vector2(1890.0, 540.0), Vector2(2190.0, 476.0), Vector2(2440.0, 346.0), Vector2(2730.0, 540.0)]:
 		_add_star(point)
+	_add_star(Vector2(2750.0, 470.0), "optional_moon_sugars")
+	_add_star(Vector2(3210.0, 399.0), "optional_moon_sugars")
+	_add_star(Vector2(3670.0, 474.0), "optional_moon_sugars")
+	_add_star(Vector2(4328.0, 530.0))
+	_add_star(Vector2(4772.0, 530.0))
 	_add_ingredient(Vector2(930.0, 430.0), "cotton")
 	_add_ingredient(Vector2(2320.0, 354.0), "cotton")
 	checkpoint_x = 160.0
@@ -1124,6 +1154,13 @@ func build_hud() -> void:
 	chapter_label.add_theme_font_size_override("font_size", 14)
 	chapter_label.add_theme_color_override("font_color", Color("#ac6371"))
 	left_stack.add_child(chapter_label)
+	boss_progress_label = Label.new()
+	boss_progress_label.name = "MoonPearlProgress"
+	boss_progress_label.text = ""
+	boss_progress_label.add_theme_font_size_override("font_size", 13)
+	boss_progress_label.add_theme_color_override("font_color", Color("#548c86"))
+	boss_progress_label.visible = false
+	left_stack.add_child(boss_progress_label)
 	objective_label = Label.new()
 	objective_label.name = "Objective"
 	objective_label.text = _l10n("尋回草莓噴泉閥門")
@@ -1380,6 +1417,8 @@ func _notification(what: int) -> void:
 		_clear_touch_input()
 		if chapter_index == 4 and is_instance_valid(chapter_four):
 			chapter_four.cancel_echo_for_focus_loss()
+		if chapter_index == 4 and is_instance_valid(chapter_four_boss):
+			chapter_four_boss.cancel_echo_for_focus_loss()
 
 
 func _layout_hud() -> void:
@@ -1437,17 +1476,17 @@ func _refresh_touch_labels() -> void:
 		return
 	var labels := {
 		"A": "A\n跳躍",
-		"B": "B\n滾動" if active_is_dudu() else ("B\n敲鈴" if chapter_index == 3 else "B\n迴旋"),
-		"X": ("X\n煞車" if chapter_index == 3 else "X\n坐擊") if active_is_dudu() else "X\n嗅嗅",
-		"Y": "Y\n抱抱",
+			"B": "B\n滾動" if active_is_dudu() else ("B\n敲鈴" if chapter_index == 3 else "B\n迴旋"),
+			"X": ("X\n煞車" if chapter_index == 3 else "X\n坐擊") if active_is_dudu() else "X\n嗅嗅",
+			"Y": "Y\n互動" if chapter_index == 4 else "Y\n抱抱",
 		"L": "L\n切換",
 		"R": "R\n攻略" if active_is_dudu() else "R\n蕉皮",
 	}
 	var descriptions := {
 		"A": "A｜跳躍",
-		"B": "B｜嘟嘟滾滾衝刺" if active_is_dudu() else ("B｜帕恰狗迴旋鏢敲鈴換向" if chapter_index == 3 else "B｜帕恰狗香蕉迴旋鏢"),
-		"X": ("X｜嘟嘟坐擊煞車齒輪" if chapter_index == 3 else "X｜嘟嘟屁屁坐擊") if active_is_dudu() else "X｜帕恰狗偵探嗅嗅",
-		"Y": "Y｜集合抱抱",
+			"B": "B｜嘟嘟滾滾衝刺" if active_is_dudu() else ("B｜帕恰狗迴旋鏢敲鈴換向" if chapter_index == 3 else "B｜帕恰狗香蕉迴旋鏢"),
+			"X": ("X｜嘟嘟坐擊煞車齒輪" if chapter_index == 3 else "X｜嘟嘟屁屁坐擊") if active_is_dudu() else "X｜帕恰狗偵探嗅嗅",
+			"Y": "Y｜互動／旋轉共鳴鏡" if chapter_index == 4 else "Y｜集合抱抱",
 		"L": "L｜切換角色",
 		"R": "R｜嘟嘟開啟攻略說明" if active_is_dudu() else "R｜帕恰狗放香蕉皮",
 	}
@@ -1613,6 +1652,9 @@ func detect_clues() -> void:
 	if active_is_dudu():
 		show_toast("切換帕恰狗，按 X／E 偵探嗅嗅找線索！")
 		return
+	if chapter_index == 4 and is_instance_valid(chapter_four_boss) and absf(pochacco.global_position.x - chapter_four_boss.global_position.x) < 520.0:
+		show_toast(chapter_four_boss.sniff_hint())
+		return
 	if chapter_index == 4 and is_instance_valid(chapter_four):
 		show_toast(chapter_four.echo_hint())
 		return
@@ -1682,6 +1724,13 @@ func break_barrier(block: Node) -> void:
 
 func request_gather() -> void:
 	if run_over:
+		return
+	if chapter_index == 4 and is_instance_valid(chapter_four_boss) and chapter_four_boss.activated and chapter_four_boss.state == chapter_four_boss.State.MIRROR_PUZZLE:
+		var boss_active = get_active_buddy()
+		if chapter_four_boss.interact_mirror_near(boss_active.global_position):
+			show_toast("潮汐鏡面轉動 90 度；接通共鳴囊後換嘟嘟坐擊。")
+		else:
+			show_toast(chapter_four_boss.sniff_hint())
 		return
 	if chapter_index == 4 and is_instance_valid(chapter_four):
 		var active = get_active_buddy()
@@ -1783,6 +1832,62 @@ func on_chapter_four_prism_solved() -> void:
 	_update_objective()
 
 
+func on_tidal_jellyfish_activated(_boss) -> void:
+	show_toast("帕恰狗：「水母王聽不見自己的節拍！」嘟嘟：「一起接回月光與回音！」先看波環預告，再輪流操作。")
+	_update_objective()
+
+
+func on_tidal_jellyfish_state_changed(_boss, _new_state: int) -> void:
+	_update_objective()
+
+
+func on_tidal_jellyfish_puzzle_started(_boss) -> void:
+	_update_objective()
+
+
+func on_tidal_jellyfish_core_exposed(_boss, seconds: float) -> void:
+	show_toast("共鳴囊亮起！切換嘟嘟，在 %.0f 秒內跳起按 X／K 坐擊。" % seconds)
+	_update_objective()
+
+
+func on_tidal_jellyfish_core_hit(boss, hit_count: int, hit_limit: int) -> void:
+	spawn_burst(boss.weak_point_position(), Color("#fff2ad"))
+	boss_impact_feedback(9.0, 0.16, 0.045)
+	show_toast("共鳴囊有效命中 %d/%d！水母王進入安全恢復，已取得命中保留。" % [hit_count, hit_limit])
+	_update_objective()
+
+
+func on_tidal_jellyfish_defeated(_boss) -> void:
+	if is_instance_valid(chapter_four_boss_gate):
+		spawn_burst(chapter_four_boss_gate.global_position, Color("#ffe7a1"))
+		chapter_four_boss_gate.queue_free()
+	chapter_four_boss_gate = null
+	boss_defeated = true
+	spawn_burst(Vector2(4950.0, GROUND_Y - 48.0), Color("#fff0a1"))
+	show_toast("潮汐恢復了！觸碰右側月光珍珠，完成第四章。")
+	_update_objective()
+
+
+func tide_jelly_ripple_contact(boss, previous_radius: float, current_radius: float) -> void:
+	for buddy in [dudu, pochacco]:
+		if not is_instance_valid(buddy) or not buddy.is_on_floor():
+			continue
+		var gap := absf(buddy.global_position.x - boss.global_position.x)
+		var safe_pad: bool = buddy.global_position.y < GROUND_Y - 36.0 and (absf(buddy.global_position.x - 4328.0) < 72.0 or absf(buddy.global_position.x - 4772.0) < 72.0)
+		if safe_pad:
+			continue
+		if gap + 20.0 >= previous_radius and gap - 20.0 <= current_radius and boss.claim_attack_hit(buddy):
+			damage_source("雙環潮波沿地面擴散！跳起，或站進凸起的安全凹槽。", buddy.global_position)
+
+
+func tide_jelly_tide_contact(boss) -> void:
+	for buddy in [dudu, pochacco]:
+		if not is_instance_valid(buddy) or not buddy.is_on_floor():
+			continue
+		if boss.tide_force(buddy.global_position) != 0.0 and boss.claim_attack_hit(buddy):
+			damage_source("側向潮流推來了！看清箭頭，躲進兩側安全凹槽。", buddy.global_position)
+
+
 func follow_gap(buddy: Buddy) -> float:
 	if buddy == dudu and is_instance_valid(pochacco):
 		return maxf(0.0, pochacco.global_position.x - dudu.global_position.x)
@@ -1844,6 +1949,8 @@ func drop_banana_peel(buddy: Buddy) -> void:
 
 func check_boomerang_hit(shot: BananaBoomerang) -> void:
 	if chapter_index == 4 and is_instance_valid(chapter_four):
+		if is_instance_valid(chapter_four_boss) and chapter_four_boss.activated:
+			chapter_four_boss.on_boomerang_hit(shot.global_position, shot.get_instance_id())
 		for index in chapter_four.ECHO_BELL_POSITIONS.size():
 			if shot.hit_ids.has(100 + index):
 				continue
@@ -1889,6 +1996,9 @@ func check_boomerang_hit(shot: BananaBoomerang) -> void:
 
 func resolve_ground_pound(buddy: Buddy) -> void:
 	spawn_burst(buddy.global_position + Vector2(0, 24), Color("#f08ca6"))
+	if chapter_index == 4 and is_instance_valid(chapter_four_boss) and chapter_four_boss.activated:
+		chapter_four_boss.on_ground_pound(buddy.global_position, buddy.is_dudu)
+		return
 	if chapter_index == 3:
 		if is_instance_valid(chapter_three):
 			chapter_three.on_ground_pound(buddy.global_position, buddy.is_dudu)
@@ -2036,6 +2146,8 @@ func _contextual_coop_hint() -> String:
 		return ""
 	var x: float = active.global_position.x
 	if chapter_index == 4 and is_instance_valid(chapter_four):
+		if is_instance_valid(chapter_four_boss) and chapter_four_boss.activated and absf(x - chapter_four_boss.global_position.x) < 600.0:
+			return chapter_four_boss.sniff_hint()
 		if x < 1450.0:
 			return "回音珊瑚廊：先聽三拍提示，再用帕恰狗迴旋鏢敲出音序。" if not chapter_four.echo_solved_flag else "音序已記住！穿過開啟的珊瑚門，前往折光玻璃礁。"
 		if x < 2660.0:
@@ -2090,8 +2202,23 @@ func _update_objective() -> void:
 	if objective_label == null:
 		return
 	if chapter_index == 4:
+		if is_instance_valid(chapter_four_boss) and chapter_four_boss.activated:
+			var boss = chapter_four_boss
+			boss_progress_label.visible = true
+			boss_progress_label.text = "月光珍珠　%s%s%s" % ["●" if boss.core_hits > 0 else "○", "●" if boss.core_hits > 1 else "○", "●" if boss.core_hits > 2 else "○"]
+			if boss.state == boss.State.DEFEATED:
+				objective_label.text = "潮汐恢復了！觸碰月光珍珠完成本章。"
+			elif boss.state == boss.State.CORE_EXPOSED:
+				objective_label.text = "共鳴囊已露出！換嘟嘟跳起坐擊（%d/3）。" % boss.core_hits
+			elif boss.state in [boss.State.ECHO_PLAYBACK, boss.State.ECHO_RETRY, boss.State.ECHO_INPUT]:
+				objective_label.text = "第三階段：看亮起珊瑚鐘的兩拍提示，再用帕恰狗迴旋鏢依序敲擊。"
+			else:
+				objective_label.text = boss.sniff_hint()
+			return
+		if is_instance_valid(boss_progress_label):
+			boss_progress_label.visible = false
 		if is_instance_valid(chapter_four) and chapter_four.prism_lit:
-			objective_label.text = "折光鏡面已連通！沿月光照亮的通道前進。"
+			objective_label.text = "折光鏡面已連通！沿安全岸道前往燈塔基座。"
 		elif is_instance_valid(chapter_four) and chapter_four.echo_solved_flag:
 			objective_label.text = "回音音序正確！前往玻璃礁，旋轉鏡面接通光路。"
 		else:
@@ -2154,8 +2281,11 @@ func damage_source(message: String, source_position: Vector2) -> void:
 	if health <= 0:
 		health = 3
 		hearts_view.health = health
+		if chapter_index == 4 and is_instance_valid(chapter_four_boss):
+			chapter_four_boss.reset_after_full_death()
+			boss_defeated = false
 		_reset_to_checkpoint()
-		show_toast("眼汪汪彈回安全小路！大福生命補滿，沒有真正死亡。")
+		show_toast("眼汪汪彈回章節檢查點！生命已補滿；水母王本戰重新開始。" if chapter_index == 4 else "眼汪汪彈回安全小路！大福生命補滿，沒有真正死亡。")
 	else:
 		show_toast(message)
 
@@ -2184,12 +2314,15 @@ func play_steam_warning() -> void:
 func fall_to_safety(_buddy: Buddy) -> void:
 	if chapter_index == 4:
 		var fall_x := _buddy.global_position.x if is_instance_valid(_buddy) else checkpoint_x
-		if fall_x > 1800.0 and checkpoint_x < 1800.0:
-			checkpoint_x = 1510.0
-			show_toast("回音珊瑚廊檢查點已記下！")
+		if fall_x > 4180.0 and checkpoint_x < 4180.0:
+			checkpoint_x = 4200.0
+			show_toast("燈塔基座檢查點已記下！")
 		elif fall_x > 2660.0 and checkpoint_x < 2660.0:
 			checkpoint_x = 2660.0
 			show_toast("折光玻璃礁檢查點已記下！")
+		elif fall_x > 1800.0 and checkpoint_x < 1800.0:
+			checkpoint_x = 1510.0
+			show_toast("回音珊瑚廊檢查點已記下！")
 		_reset_to_checkpoint()
 		return
 	if chapter_index == 3:
@@ -2272,12 +2405,15 @@ func on_buddy_arrived(_buddy: Buddy) -> void:
 func on_buddy_moved_checkpoint_check() -> void:
 	var active = get_active_buddy()
 	if chapter_index == 4:
-		if active.global_position.x > 1800.0 and checkpoint_x < 1800.0:
-			checkpoint_x = 1510.0
-			show_toast("回音珊瑚廊檢查點已記下！")
+		if active.global_position.x > 4180.0 and checkpoint_x < 4180.0:
+			checkpoint_x = 4200.0
+			show_toast("燈塔基座檢查點已記下！")
 		elif active.global_position.x > 2660.0 and checkpoint_x < 2660.0:
 			checkpoint_x = 2660.0
 			show_toast("折光玻璃礁檢查點已記下！")
+		elif active.global_position.x > 1800.0 and checkpoint_x < 1800.0:
+			checkpoint_x = 1510.0
+			show_toast("回音珊瑚廊檢查點已記下！")
 		return
 	if chapter_index == 3:
 		if active.global_position.x > 3860.0 and checkpoint_x < 3860.0:
@@ -2383,7 +2519,12 @@ func _process(delta: float) -> void:
 			var desired := Vector2(desired_x, 360.0)
 			camera.global_position = camera.global_position.lerp(desired, 1.0 - exp(-delta * 6.5))
 		on_buddy_moved_checkpoint_check()
-		if chapter_index == 3 and is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian):
+		if chapter_index == 4 and is_instance_valid(chapter_four_boss):
+			if not chapter_four_boss.activated and active.global_position.x >= 4260.0:
+				chapter_four_boss.activate()
+			if chapter_four_boss.state == chapter_four_boss.State.DEFEATED and active.global_position.distance_to(Vector2(4950.0, GROUND_Y - 48.0)) <= 86.0:
+				finish_level()
+		elif chapter_index == 3 and is_instance_valid(chapter_three) and is_instance_valid(chapter_three.guardian):
 			if active.global_position.x >= 4310.0:
 				chapter_three.activate_guardian()
 			if chapter_three.core_unlocked and active.global_position.distance_to(chapter_three.guardian.finish_core_position()) < 82.0:
@@ -2777,6 +2918,20 @@ func finish_level() -> void:
 	if chapter_index == 3:
 		var gear_result := _l10n("星星糖鐘芯重新啟動，糖霜齒輪城恢復了節拍。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了第三章的機械解謎！", {"count": "%02d" % star_candies})
 		result_overlay = _create_overlay("鐘芯重新啟動了！", gear_result, [["再玩第三章", restart_game], ["回到首頁", return_to_title]], true)
+	elif chapter_index == 4:
+		var store := get_node_or_null("/root/SaveStore")
+		chapter_four_reward_saved = store != null and store.has_method("claim_star_candy_reward") and store.claim_star_candy_reward(chapter_four_run_id, star_candies)
+		var result_text := _chapter_four_result_text(store)
+		var actions: Array = []
+		if not chapter_four_reward_saved:
+			actions.append(["重試保存", retry_chapter_four_reward_save])
+		actions.append(["再玩第四章", restart_game])
+		actions.append(["回到首頁", return_to_title])
+		result_overlay = _create_overlay("月光珍珠重新點亮了！", result_text, actions, true)
+		if chapter_four_reward_saved:
+			var retry_button := result_overlay.find_child("Action0", true, false) as Button
+			if is_instance_valid(retry_button):
+				retry_button.visible = false
 	elif chapter_index == 2:
 		var cloud_result := _l10n("月光蜂蜜鈴重新響起，棉花糖風暴平息了。\n\n星星糖：{count} 顆\n嘟嘟和帕恰狗完成了雲朵森林冒險！", {"count": "%02d" % star_candies})
 		result_overlay = _create_overlay("月光蜂蜜鈴找回來了！", cloud_result, [["再玩第二章", restart_game], ["回到首頁", return_to_title]], true)
@@ -2825,6 +2980,7 @@ func _create_overlay(heading: String, body_text: String, actions: Array, termina
 	title.add_theme_color_override("font_color", Color("#b54f6c"))
 	stack.add_child(title)
 	var body := Label.new()
+	body.name = "ResultBody"
 	body.text = _l10n(body_text)
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2834,10 +2990,33 @@ func _create_overlay(heading: String, body_text: String, actions: Array, termina
 	for index in actions.size():
 		var action: Array = actions[index]
 		var button := _make_button(_l10n(action[0]), 0, 52, terminal and index == 0)
+		button.name = "Action%d" % index
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(action[1])
 		stack.add_child(button)
 	return layer
+
+
+func _chapter_four_result_text(store: Node) -> String:
+	var balance := int(store.get_star_candy_balance()) if is_instance_valid(store) and store.has_method("get_star_candy_balance") else 0
+	if chapter_four_reward_saved:
+		return "本次收集星星糖：%d 顆\n已保存的星星糖餘額：%d 顆\n同一次通關不會重複入帳。" % [star_candies, balance]
+	return "本次收集星星糖：%d 顆\n目前保存的星星糖餘額：%d 顆\n本次獎勵尚未保存；可按「重試保存」，不會重複領取。" % [star_candies, balance]
+
+
+func retry_chapter_four_reward_save() -> void:
+	if chapter_four_reward_saved or chapter_four_run_id.is_empty():
+		return
+	var store := get_node_or_null("/root/SaveStore")
+	if not is_instance_valid(store) or not store.has_method("claim_star_candy_reward"):
+		return
+	chapter_four_reward_saved = store.claim_star_candy_reward(chapter_four_run_id, star_candies)
+	var body := result_overlay.find_child("ResultBody", true, false) as Label if is_instance_valid(result_overlay) else null
+	if is_instance_valid(body):
+		body.text = _l10n(_chapter_four_result_text(store))
+	var retry_button := result_overlay.find_child("Action0", true, false) as Button if is_instance_valid(result_overlay) else null
+	if is_instance_valid(retry_button):
+		retry_button.visible = not chapter_four_reward_saved
 
 
 func _update_objective_after_clue() -> void:

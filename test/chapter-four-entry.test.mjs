@@ -5,11 +5,11 @@ import test from 'node:test';
 const titleSource = readFileSync(new URL('../scripts/snackisle_title.gd', import.meta.url), 'utf8');
 const gameSource = readFileSync(new URL('../scripts/snackisle_game.gd', import.meta.url), 'utf8');
 
-test('chapter four has a Traditional Chinese title-screen prototype entry', () => {
+test('chapter four has a Traditional Chinese playable title-screen entry', () => {
   assert.match(titleSource, /chapter_four_button\.name\s*=\s*"StartChapterFour"/);
-  assert.match(titleSource, /試玩第四章｜月潮玻璃海/);
+  assert.match(titleSource, /遊玩第四章｜月潮玻璃海/);
   assert.match(titleSource, /chapter_four_button\.size_flags_horizontal\s*=\s*Control\.SIZE_EXPAND_FILL/);
-  assert.match(titleSource, /chapter_four_button\.text\s*=\s*_l10n\("第四章"\) if compact else _l10n\("試玩第四章｜月潮玻璃海"\)/);
+  assert.match(titleSource, /chapter_four_button\.text\s*=\s*_l10n\("第四章"\) if compact else _l10n\("遊玩第四章｜月潮玻璃海"\)/);
   assert.match(titleSource, /chapter_four_width\s*:=\s*title_panel\.custom_minimum_size\.x/);
   assert.match(titleSource, /func _start_chapter_four\(\)[\s\S]*?set_meta\("snackisle_chapter", 4\)/);
   assert.match(titleSource, /func _start_chapter_four\(\)[\s\S]*?change_scene_to_file\("res:\/\/scenes\/game\.tscn"\)/);

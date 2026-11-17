@@ -136,7 +136,7 @@ func _build_title() -> void:
 	wardrobe_button.name = "WardrobeButton"
 	wardrobe_button.pressed.connect(_open_wardrobe)
 	secondary_actions.add_child(wardrobe_button)
-	var chapter_four_button := _make_button("試玩第四章｜月潮玻璃海", false)
+	var chapter_four_button := _make_button("遊玩第四章｜月潮玻璃海", false)
 	chapter_four_button.name = "StartChapterFour"
 	chapter_four_button.custom_minimum_size = Vector2(0.0, 48.0)
 	chapter_four_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -262,13 +262,13 @@ func _layout_title() -> void:
 		chapter_two_button.text = _l10n("第二章") if compact else _l10n("體驗第二章｜雲朵森林")
 	if chapter_three_button != null:
 		chapter_three_button.text = _l10n("第三章") if compact else _l10n("第三章公開試玩｜齒輪城")
-	if wardrobe_button != null:
-		wardrobe_button.text = _l10n("換裝") if compact else _l10n("角色換裝")
-	if chapter_four_button != null:
-		chapter_four_button.text = _l10n("第四章") if compact else _l10n("試玩第四章｜月潮玻璃海")
-		var chapter_four_width := title_panel.custom_minimum_size.x - (28.0 if compact else 44.0)
-		chapter_four_button.custom_minimum_size = Vector2(chapter_four_width, 38 if compact else 46)
-		chapter_four_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if wardrobe_button != null:
+			wardrobe_button.text = _l10n("換裝") if compact else _l10n("角色換裝")
+		if chapter_four_button != null:
+			chapter_four_button.text = _l10n("第四章") if compact else _l10n("遊玩第四章｜月潮玻璃海")
+			var chapter_four_width := title_panel.custom_minimum_size.x - (28.0 if compact else 44.0)
+			chapter_four_button.custom_minimum_size = Vector2(chapter_four_width, 38 if compact else 46)
+			chapter_four_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		chapter_four_button.add_theme_font_size_override("font_size", 13 if compact else 16)
 
 

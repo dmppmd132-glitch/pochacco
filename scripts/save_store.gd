@@ -2,7 +2,7 @@ extends Node
 ## Local-only bounded records. No network adapters or global submission path.
 
 const SAVE_PATH := "user://save.json"
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := 4
 const TOP_N := 10
 const NAME_LIMIT := 24
 const NAME_BYTES := 96
@@ -25,6 +25,7 @@ func _default_data() -> Dictionary:
 		"records": [],
 		"tutorial_version": 0,
 		"star_candy_balance": 0,
+		"claimed_star_candy_run_ids": [],
 		"unlocked_costume_ids": COSTUME_CATALOG.default_unlocked_ids(),
 		"equipped_costumes_by_character": COSTUME_CATALOG.default_equipment(),
 	}
@@ -49,6 +50,8 @@ func load_save() -> void:
 		data.star_candy_balance = _safe_int(parsed.get("star_candy_balance", 0), 0, STAR_CANDY_WALLET_CAP)
 		data.unlocked_costume_ids = _sanitize_unlocked_costume_ids(parsed.get("unlocked_costume_ids", []))
 		data.equipped_costumes_by_character = _sanitize_equipped_costumes(parsed.get("equipped_costumes_by_character", {}), data.unlocked_costume_ids)
+	if int(parsed.version) >= 4:
+		data.claimed_star_candy_run_ids = _sanitize_claimed_star_candy_run_ids(parsed.get("claimed_star_candy_run_ids", []))
 	var records: Variant = parsed.get("records", [])
 	if records is Array:
 		var seen: Dictionary = {}
@@ -77,6 +80,43 @@ func save() -> bool:
 
 func get_star_candy_balance() -> int:
 	return _safe_int(data.get("star_candy_balance", 0), 0, STAR_CANDY_WALLET_CAP)
+
+
+## Atomically credits a chapter's collected stars once for the supplied run ID.
+## A duplicate claim is treated as a successful no-op, so retries cannot mint twice.
+func claim_star_candy_reward(run_id: String, amount: int) -> bool:
+	var normalized_id := run_id.strip_edges()
+	if normalized_id.is_empty() or normalized_id.length() > 100 or amount < 0:
+		return false
+	var claimed := _sanitize_claimed_star_candy_run_ids(data.get("claimed_star_candy_run_ids", []))
+	if claimed.has(normalized_id):
+		return true
+	var previous := data.duplicate(true)
+	claimed.append(normalized_id)
+	while claimed.size() > 500:
+		claimed.pop_front()
+	data.claimed_star_candy_run_ids = claimed
+	data.star_candy_balance = mini(STAR_CANDY_WALLET_CAP, get_star_candy_balance() + clampi(amount, 0, STAR_CANDY_WALLET_CAP))
+	if not save():
+		data = previous
+		return false
+	return true
+
+
+func _sanitize_claimed_star_candy_run_ids(value: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if not value is Array:
+		return result
+	for raw_id: Variant in value:
+		if not raw_id is String:
+			continue
+		var normalized_id := str(raw_id).strip_edges()
+		if normalized_id.is_empty() or normalized_id.length() > 100 or result.has(normalized_id):
+			continue
+		result.append(normalized_id)
+	while result.size() > 500:
+		result.pop_front()
+	return result
 
 
 func get_unlocked_costume_ids() -> Array[String]:
