@@ -1139,13 +1139,13 @@ func build_hud() -> void:
 	objective_label.offset_bottom = 66
 	objective_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_root.add_child(objective_label)
-	var pause_button := _make_button("Ⅱ", 50, 46, false)
+	var pause_button := _make_button("Ⅱ", 56, 56, false)
 	pause_button.name = "PauseButton"
 	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	pause_button.offset_left = -65
+	pause_button.offset_left = -70
 	pause_button.offset_top = 13
 	pause_button.offset_right = -14
-	pause_button.offset_bottom = 61
+	pause_button.offset_bottom = 69
 	pause_button.pressed.connect(open_pause)
 	hud_root.add_child(pause_button)
 	toast_label = Label.new()
@@ -1406,14 +1406,15 @@ func _layout_hud() -> void:
 		touch_controls.visible = touch
 		if is_instance_valid(buddy_gesture_badge):
 			buddy_gesture_badge.visible = touch
-		var button_size := 42.0 if view_size.x < 400.0 else (54.0 if view_size.x < 850.0 else 68.0)
+		# Keep every primary touch target comfortably tappable on narrow phones.
+		var button_size := 48.0 if view_size.x < 400.0 else (56.0 if view_size.x < 850.0 else 64.0)
 		var stick_size := clampf(button_size * 2.45, 112.0, 156.0)
 		touch_joystick.offset_left = 12.0
 		touch_joystick.offset_top = -stick_size - 12.0
 		touch_joystick.offset_right = 12.0 + stick_size
 		touch_joystick.offset_bottom = -12.0
 		var grid := touch_controls.get_node("ActionGrid") as GridContainer
-		var cell := button_size if button_size <= 54.0 else 60.0
+		var cell := button_size
 		var grid_width := cell * 3.0 + 8.0
 		var grid_height := cell * 4.0 + 12.0
 		grid.offset_left = -grid_width - 12.0
@@ -1426,7 +1427,7 @@ func _layout_hud() -> void:
 			var button := child as Button
 			var key := str(button.get_meta("pad_key", ""))
 			button.custom_minimum_size = Vector2(cell, cell)
-			button.add_theme_font_size_override("font_size", 10 if cell <= 42.0 else (12 if cell <= 54.0 else 14))
+			button.add_theme_font_size_override("font_size", 11 if cell <= 48.0 else (13 if cell <= 56.0 else 15))
 			_style_touch_pad_button(button, key, cell, key == "L" or key == "R")
 		_refresh_touch_labels()
 
@@ -1436,16 +1437,16 @@ func _refresh_touch_labels() -> void:
 		return
 	var labels := {
 		"A": "A\n跳躍",
-		"B": "B\n滾動" if active_is_dudu() else "B\n迴旋",
-		"X": "X\n坐擊" if active_is_dudu() else "X\n嗅嗅",
+		"B": "B\n滾動" if active_is_dudu() else ("B\n敲鈴" if chapter_index == 3 else "B\n迴旋"),
+		"X": ("X\n煞車" if chapter_index == 3 else "X\n坐擊") if active_is_dudu() else "X\n嗅嗅",
 		"Y": "Y\n抱抱",
 		"L": "L\n切換",
 		"R": "R\n攻略" if active_is_dudu() else "R\n蕉皮",
 	}
 	var descriptions := {
 		"A": "A｜跳躍",
-		"B": "B｜嘟嘟滾滾衝刺" if active_is_dudu() else "B｜帕恰狗香蕉迴旋鏢",
-		"X": "X｜嘟嘟屁屁坐擊" if active_is_dudu() else "X｜帕恰狗偵探嗅嗅",
+		"B": "B｜嘟嘟滾滾衝刺" if active_is_dudu() else ("B｜帕恰狗迴旋鏢敲鈴換向" if chapter_index == 3 else "B｜帕恰狗香蕉迴旋鏢"),
+		"X": ("X｜嘟嘟坐擊煞車齒輪" if chapter_index == 3 else "X｜嘟嘟屁屁坐擊") if active_is_dudu() else "X｜帕恰狗偵探嗅嗅",
 		"Y": "Y｜集合抱抱",
 		"L": "L｜切換角色",
 		"R": "R｜嘟嘟開啟攻略說明" if active_is_dudu() else "R｜帕恰狗放香蕉皮",
@@ -2560,26 +2561,50 @@ func _draw_moon_tide_chapter() -> void:
 
 func _draw_gear_chapter() -> void:
 	draw_rect(Rect2(0, -720, WORLD_WIDTH, 1500), Color("#f7ead8"), true)
-	for index in 11:
-		var x := float(index) * 520.0 - 90.0
-		var tower_height := 90.0 + float((index * 29) % 76)
-		draw_rect(Rect2(x + 70.0, GROUND_Y - tower_height, 150.0, tower_height), Color("#e8c69e"), true)
-		draw_colored_polygon(PackedVector2Array([Vector2(x + 48, GROUND_Y - tower_height), Vector2(x + 145, GROUND_Y - tower_height - 52), Vector2(x + 242, GROUND_Y - tower_height)]), Color("#d68b68"))
-		draw_circle(Vector2(x + 145, GROUND_Y - tower_height * 0.55), 15.0, Color("#fff0bf"))
+	# Distant buttercream skyline: alternating tower silhouettes add depth without crowding the play lane.
+	for index in 13:
+		var x := float(index) * 430.0 - 110.0
+		var tower_height := 112.0 + float((index * 37) % 106)
+		var tower_color := Color("#e8c69e", 0.75) if index % 2 == 0 else Color("#efd7b7", 0.82)
+		draw_rect(Rect2(x + 54.0, GROUND_Y - tower_height, 142.0, tower_height), tower_color, true)
+		draw_rect(Rect2(x + 46.0, GROUND_Y - tower_height + 18.0, 158.0, 10.0), Color("#fff0d5", 0.9), true)
+		draw_colored_polygon(PackedVector2Array([Vector2(x + 35, GROUND_Y - tower_height), Vector2(x + 125, GROUND_Y - tower_height - 48), Vector2(x + 215, GROUND_Y - tower_height)]), Color("#d68b68", 0.86))
+		for window_y in [GROUND_Y - tower_height * 0.66, GROUND_Y - tower_height * 0.34]:
+			draw_circle(Vector2(x + 125.0, window_y), 9.0, Color("#fff0bf", 0.88))
+			draw_line(Vector2(x + 125.0, window_y - 7.0), Vector2(x + 125.0, window_y + 7.0), Color("#d6a66e", 0.8), 2.0, true)
+	# Oversized brass cogs in the skyline reinforce the chapter silhouette.
 	for index in 7:
 		var gear_x := 360.0 + float(index) * 760.0
 		var gear_y := 170.0 + float((index * 31) % 90)
-		draw_circle(Vector2(gear_x, gear_y), 72.0, Color("#dca66a", 0.44))
-		draw_circle(Vector2(gear_x, gear_y), 50.0, Color("#f5d29b", 0.55), false, 8.0, true)
+		draw_circle(Vector2(gear_x, gear_y), 78.0, Color("#dca66a", 0.34))
+		draw_circle(Vector2(gear_x, gear_y), 60.0, Color("#bd8055", 0.52), false, 5.0, true)
+		draw_circle(Vector2(gear_x, gear_y), 47.0, Color("#f5d29b", 0.6), false, 8.0, true)
+		for tooth in 12:
+			var tooth_angle := TAU * float(tooth) / 12.0
+			var tooth_center := Vector2(gear_x, gear_y) + Vector2(cos(tooth_angle), sin(tooth_angle)) * 69.0
+			draw_circle(tooth_center, 8.0, Color("#c48a5b", 0.48))
 		draw_circle(Vector2(gear_x, gear_y), 13.0, Color("#b97655", 0.7))
-	for index in 9:
-		var x := 180.0 + float(index) * 590.0
-		draw_line(Vector2(x, 260.0), Vector2(x + 26.0, 244.0), Color("#cf9a71", 0.65), 4.0, true)
-		draw_circle(Vector2(x + 34.0, 240.0), 4.0, Color("#f2c76b"))
+	# Sugared bunting and tiny sprinkle glints across the upper skyline.
+	for index in 12:
+		var x := 150.0 + float(index) * 430.0
+		var y := 246.0 + float(index % 3) * 18.0
+		draw_line(Vector2(x, y), Vector2(x + 24.0, y - 14.0), Color("#cf9a71", 0.58), 3.0, true)
+		draw_colored_polygon(PackedVector2Array([Vector2(x + 24.0, y - 14.0), Vector2(x + 33.0, y - 10.0), Vector2(x + 25.0, y - 3.0)]), Color("#ef9da8", 0.84))
+		draw_circle(Vector2(x + 42.0, y - 19.0), 3.5, Color("#f2c76b", 0.82))
+	# The split is readable at a glance: green low lane is safe; rose upper lane is optional risk.
+	draw_line(Vector2(2790.0, 574.0), Vector2(3845.0, 574.0), Color("#79ad8a", 0.54), 7.0, true)
+	draw_line(Vector2(2570.0, 448.0), Vector2(2940.0, 448.0), Color("#d98478", 0.62), 6.0, true)
+	for route_x in [2860.0, 3120.0, 3380.0, 3640.0]:
+		draw_circle(Vector2(route_x, 573.0), 5.0, Color("#d7f0d7", 0.9))
+	for route_x in [2630.0, 2970.0, 3260.0, 3540.0, 3740.0]:
+		draw_circle(Vector2(route_x, 447.0), 4.0, Color("#fff1d8", 0.9))
 	var font: Font = GAME_FONT
 	if font != null:
 		draw_string(font, Vector2(100, 330), _l10n("糖霜齒輪城"), HORIZONTAL_ALIGNMENT_LEFT, -1, 31, Color("#9b664e"))
 		draw_string(font, Vector2(760, 465), _l10n("黃銅鈴：改變方向"), HORIZONTAL_ALIGNMENT_CENTER, -1, 17, Color("#8e604f"))
+		draw_string(font, Vector2(2860, 615), "安全路線｜低平台・慢速齒輪", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#527f70"))
+		draw_string(font, Vector2(2630, 420), "高風險糖果路線｜蒸汽噴口", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#a35f4d"))
+		draw_string(font, Vector2(4360, 402), "發條糖果守衛", HORIZONTAL_ALIGNMENT_CENTER, -1, 19, Color("#9b664e"))
 	draw_line(Vector2(1040, GROUND_Y - 15), Vector2(1140, GROUND_Y - 15), Color("#b77b58"), 5.0, true)
 	draw_circle(Vector2(1090, GROUND_Y - 15), 25.0, Color("#f2c968"))
 	draw_circle(Vector2(1090, GROUND_Y - 15), 12.0, Color("#fff1c9"))

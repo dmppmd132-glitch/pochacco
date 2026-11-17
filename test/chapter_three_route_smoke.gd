@@ -22,6 +22,12 @@ func _run() -> void:
 	var low = chapter._gear_by_id("工坊齒輪")
 	var high = chapter._gear_by_id("工坊高位齒輪")
 	_check(low is AnimatableBody2D and low.sync_to_physics, "workshop carrier is the real physics-synchronized AnimatableBody2D")
+	game.switch_character()
+	_check(game.touch_buttons["B"].text.contains("敲鈴"), "Pochacco's chapter-three touch action clearly labels the bell-reversal move")
+	_check(game.touch_buttons["X"].text.contains("嗅嗅"), "Pochacco retains the sniff action label for route hints")
+	_check(game.touch_buttons["B"].size.x >= 48.0 and game.touch_buttons["X"].size.y >= 48.0, "chapter-three touch action targets meet the 48px minimum")
+	game.switch_character()
+	_check(game.touch_buttons["X"].text.contains("煞車"), "Dudu's chapter-three touch action clearly labels gear braking")
 
 	# Put the real controlled Buddy at the center of the real moving carrier.
 	game.pochacco.set_physics_process(false)

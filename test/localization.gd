@@ -65,7 +65,7 @@ func _run() -> void:
 			values.append(token.get_string(1))
 		values.sort()
 		_check(keys == values, "whole-message placeholder parity: " + key)
-	for character: String in "繁體中文嘟嘟帕恰狗點心島莓噴泉閥門果醬攻略手把抱蕉皮迴旋鏢":
+	for character: String in "繁體中文嘟嘟帕恰狗點心島莓噴泉閥門果醬攻略手把抱蕉皮迴旋鏢角色換裝":
 		_check(FONT.has_char(character.unicode_at(0)), "bundled font chain covers: " + character)
 	_check(FONT.fallbacks.size() >= 2, "font chain contains TC and SC fallback faces")
 	if FONT.fallbacks.size() >= 2:
@@ -81,7 +81,7 @@ func _run() -> void:
 	var wardrobe_button: Button = title.find_child("WardrobeButton", true, false)
 	_check(title_label != null and title_label.text == "嘟嘟與帕恰狗\n點心島的奇幻野餐", "title renders Traditional Chinese through the service")
 	_check(start_button != null and start_button.text == "開始冒險", "start control is Traditional Chinese")
-	_check(wardrobe_button != null and wardrobe_button.text == "衣櫃換裝", "wardrobe control is Traditional Chinese")
+	_check(wardrobe_button != null and ["換裝", "角色換裝"].has(wardrobe_button.text), "wardrobe control uses responsive Traditional Chinese copy")
 	title.queue_free()
 	await process_frame
 	_finish()

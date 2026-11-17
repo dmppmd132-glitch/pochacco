@@ -49,6 +49,13 @@
 - [ ] 在實體 iPhone／Android PWA 量測 FPS、耗電與觸控硬體延遲；確認 viewport 畫質、對話氣泡不遮住跳躍落點，以及搖桿與右側能力按鈕可同時操作。雲端執行環境無法代表實體硬體，仍待真機記錄。
 - [x] 修復 responsive standalone harness 的 autoload 初始化後重跑完整 viewport 測試；本輪對話契約已在真實遊戲場景中驗收上述觸控輸入，並新增對話氣泡／觸控區域及搖桿＋能力鍵並行回歸檢查。
 
+### 2026-11-17 第三章視覺與觸控 polish
+
+- [x] 糖霜齒輪城背景增加奶油色鐘樓輪廓、窗燈、黃銅大齒輪與糖霜彩旗；安全低線與高風險上線以不同色帶／落點提示區分。移動平台加焦糖底影、黃銅輪齒、鉚釘與更醒目的換向預告牌。
+- [x] 手機 ABXY／肩鍵觸控目標依視窗寬度至少 48 logical px；暫停鍵增至 56×56 logical px。第三章帕恰狗 B 鍵標示敲鈴、嘟嘟 X 鍵標示煞車，並保留能力提示文字。
+- [x] Godot 真實 renderer 場景擷取已檢視；`test:chapter-three` 9/9、`test:chapter-three-route`、`test:responsive`（12 組橫向尺寸／模式）與 `test:dialogue` 通過；`npm test` 核心 smoke 通過。
+- [ ] 實體 iPhone／Android 觸控面板、耗電、長時間發熱與離線重啟仍待真機驗收；上述模擬／桌面 renderer 結果不代表實機通過。
+
 ## 待實機確認
 
 - [ ] 在實體手機確認安裝流程與觸控手感。

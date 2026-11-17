@@ -158,21 +158,31 @@ class GearPlatform extends AnimatableBody2D:
 	func _draw() -> void:
 		var bounds := Rect2(-size * 0.5, size)
 		var base := Color("#d99a58") if not is_braked() else Color("#efb45f")
+		# Deep caramel underside separates the moving carrier from the busy scenery.
+		draw_rect(Rect2(bounds.position + Vector2(0.0, 5.0), size), Color("#8d594c", 0.42), true)
 		draw_rect(bounds, base, true)
 		draw_rect(Rect2(bounds.position, Vector2(size.x, 9.0)), Color("#fff0c9"), true)
-		draw_line(Vector2(bounds.position.x, 10.0), Vector2(bounds.end.x, 10.0), Color("#9c604b"), 3.0, true)
-		for x in range(-int(size.x * 0.42), int(size.x * 0.43), 34):
-			draw_circle(Vector2(x, -2), 4.0, Color("#ffe08a"))
+		draw_rect(Rect2(bounds.position + Vector2(0.0, 9.0), Vector2(size.x, 5.0)), Color("#f4c77c"), true)
+		draw_line(Vector2(bounds.position.x, 16.0), Vector2(bounds.end.x, 16.0), Color("#9c604b"), 3.0, true)
+		# Brass teeth and inset panels make this read as a gear, not a plain lift.
+		for x in range(-int(size.x * 0.44), int(size.x * 0.45), 30):
+			draw_rect(Rect2(Vector2(x - 5.0, -size.y * 0.5 - 5.0), Vector2(10.0, 8.0)), Color("#bf814e"), true)
+			draw_circle(Vector2(x, 3.0), 4.0, Color("#ffe08a"))
+		for x in [-size.x * 0.38, size.x * 0.38]:
+			draw_circle(Vector2(x, 11.0), 3.2, Color("#8d594c"))
+			draw_circle(Vector2(x - 1.0, 10.0), 1.2, Color("#fff0c9"))
 		var arrow_visible := not turn_warning_active or int(floor(warning_elapsed * 12.0)) % 2 == 0
 		if arrow_visible:
 			var arrow_color := Color("#8a493f") if not turn_warning_active else Color("#fff1a6")
 			var arrow_origin := Vector2(0.0, -size.y * 0.5 - 17.0)
 			var arrow_tip := arrow_origin + Vector2(direction * 24.0, 0.0)
-			draw_line(arrow_origin, arrow_tip, arrow_color, 5.0, true)
-			draw_line(arrow_tip, arrow_tip + Vector2(-direction * 9.0, -7.0), arrow_color, 4.0, true)
-			draw_line(arrow_tip, arrow_tip + Vector2(-direction * 9.0, 7.0), arrow_color, 4.0, true)
+			var arrow_width := 6.0 if turn_warning_active else 4.0
+			draw_line(arrow_origin, arrow_tip, arrow_color, arrow_width, true)
+			draw_line(arrow_tip, arrow_tip + Vector2(-direction * 9.0, -7.0), arrow_color, arrow_width, true)
+			draw_line(arrow_tip, arrow_tip + Vector2(-direction * 9.0, 7.0), arrow_color, arrow_width, true)
 		if turn_warning_active:
-			draw_string(ThemeDB.fallback_font, Vector2(-34.0, -size.y * 0.5 - 27.0), "即將換向", HORIZONTAL_ALIGNMENT_CENTER, 68.0, 12, Color("#6f342e"))
+			draw_rect(Rect2(-38.0, -size.y * 0.5 - 39.0, 76.0, 17.0), Color("#fff3ce", 0.94), true)
+			draw_string(ThemeDB.fallback_font, Vector2(-34.0, -size.y * 0.5 - 26.0), "即將換向", HORIZONTAL_ALIGNMENT_CENTER, 68.0, 12, Color("#6f342e"))
 		for x in [-size.x * 0.36, 0.0, size.x * 0.36]:
 			draw_arc(Vector2(x, -size.y * 0.5 - 9.0), 12.0, 0.0, TAU, 12, Color("#a7654d"), 4.0, true)
 		if is_braked():

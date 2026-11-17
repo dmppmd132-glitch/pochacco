@@ -26,7 +26,7 @@ func _run() -> void:
 	var controls_hint: Label = title.find_child("ControlsHint", true, false)
 	_check(start_button != null and start_button.text == "開始冒險", "title screen presents the playable game entry")
 	_check(chapter_two_button != null and chapter_two_button.text == "體驗第二章｜雲朵森林", "title screen provides a localized Chapter Two entry")
-	_check(wardrobe_button != null and wardrobe_button.text == "衣櫃換裝", "title screen provides a wardrobe entry")
+	_check(wardrobe_button != null and wardrobe_button.text == "角色換裝", "title screen provides a wardrobe entry")
 	_check(controls_hint != null and controls_hint.text.contains("觸控／手把"), "title explains the new gamepad-style touch controls")
 	_check(title.find_child("GameTitle", true, false) != null, "title card is present")
 	if wardrobe_button != null:

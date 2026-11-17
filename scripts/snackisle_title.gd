@@ -132,7 +132,7 @@ func _build_title() -> void:
 	chapter_three_button.name = "StartChapterThree"
 	chapter_three_button.pressed.connect(_start_chapter_three)
 	secondary_actions.add_child(chapter_three_button)
-	var wardrobe_button := _make_button("衣櫃換裝", false)
+	var wardrobe_button := _make_button("角色換裝", false)
 	wardrobe_button.name = "WardrobeButton"
 	wardrobe_button.pressed.connect(_open_wardrobe)
 	secondary_actions.add_child(wardrobe_button)
@@ -263,7 +263,7 @@ func _layout_title() -> void:
 	if chapter_three_button != null:
 		chapter_three_button.text = _l10n("第三章") if compact else _l10n("第三章公開試玩｜齒輪城")
 	if wardrobe_button != null:
-		wardrobe_button.text = _l10n("衣櫃") if compact else _l10n("衣櫃換裝")
+		wardrobe_button.text = _l10n("換裝") if compact else _l10n("角色換裝")
 	if chapter_four_button != null:
 		chapter_four_button.text = _l10n("第四章") if compact else _l10n("試玩第四章｜月潮玻璃海")
 		var chapter_four_width := title_panel.custom_minimum_size.x - (28.0 if compact else 44.0)
